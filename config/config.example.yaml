@@ -1,6 +1,6 @@
 # API Configuration
 api:
-  openweather_key: "f539025360dc61df747c69ecce5fb4e7"  # Replace with your actual key
+  openweather_key: "You_Api_key_here"  # Replace with your actual key
   base_url: "https://api.openweathermap.org/data/2.5"
   
 # Cities to track
