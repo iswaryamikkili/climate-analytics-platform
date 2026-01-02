@@ -50,7 +50,8 @@ climate-analytics-platform/
 ## 🚀 Getting Started
 
 ### Prerequisites
-- Python 3.8+
+- Python 3.11+ (3.12 also supported with Conda)
+- Conda (recommended for Apple Silicon Macs)
 - OpenWeatherMap API key (free tier)
 
 ### Installation
@@ -59,12 +60,18 @@ climate-analytics-platform/
 git clone https://github.com/YOUR_USERNAME/climate-analytics-platform.git
 cd climate-analytics-platform
 
-# Create virtual environment
-python3 -m venv venv
-source venv/bin/activate
+# Create conda environment (recommended)
+conda create -n climate-env python=3.11 -y
+conda activate climate-env
 
 # Install dependencies
-pip install -r requirements.txt
+conda install pandas numpy scipy scikit-learn matplotlib seaborn -y
+pip install streamlit plotly statsmodels sqlalchemy pyyaml python-dotenv requests
+
+# OR if not using conda, use venv:
+# python3 -m venv venv
+# source venv/bin/activate
+# pip install -r requirements.txt
 
 # Setup configuration
 cp config/config.example.yaml config/config.yaml
