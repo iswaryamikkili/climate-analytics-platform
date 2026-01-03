@@ -201,6 +201,12 @@ def main():
         # Save to CSV
         collector.save_to_csv(weather_df)
         
+        # Also save to database
+        from database import WeatherDatabase
+        db = WeatherDatabase()
+        db.insert_weather_data(weather_df)
+        db.get_data_summary()
+        db.close()
         print("✅ SUCCESS! Data collection and storage complete.\n")
         
         return weather_df
