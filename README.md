@@ -25,6 +25,21 @@ This project demonstrates skills in:
 - Interactive visualizations
 - Automated data pipeline
 
+## 🎨 Interactive Dashboard
+
+Launch the dashboard:
+```bash
+streamlit run app/dashboard.py
+```
+
+**Features:**
+- 📊 **Overview**: Real-time metrics and key statistics
+- 🌍 **City Comparison**: Side-by-side analysis with statistical tests
+- 📈 **Time Series**: Temperature trends and moving averages
+- 🔗 **Correlations**: Interactive correlation heatmap
+- ⚠️ **Anomalies**: Detect unusual weather patterns
+- 📋 **Raw Data**: Explore and download data
+
 ## 🛠️ Tech Stack
 
 - **Language**: Python 3.11
@@ -93,9 +108,9 @@ pytest tests/
 - [X] Data ingestion module -> working with live data
 - [X] Database schema and setup
 - [X] Statistical analysis module
-- [] Data processing pipeline
-- [ ] Statistical analysis module
-- [ ] Dashboard development
+- [X] Data processing pipeline
+- [X] Statistical analysis module
+- [X] Dashboard development
 - [ ] AWS deployment
 - [ ] Documentation
 ##Features Implemented
