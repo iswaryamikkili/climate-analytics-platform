@@ -89,15 +89,29 @@ pytest tests/
 
 ## 📝 Development Progress
 
-- [x] Project setup and structure
-- [X ] Data ingestion module -> working with live data
-- [ ] Database schema and setup
-- [ ] Data processing pipeline
+- [X] Project setup and structure
+- [X] Data ingestion module -> working with live data
+- [X] Database schema and setup
+- [X] Statistical analysis module
+- [] Data processing pipeline
 - [ ] Statistical analysis module
 - [ ] Dashboard development
 - [ ] AWS deployment
 - [ ] Documentation
+##Features Implemented
 
+### Data Collection
+- Real-time weather data from 5 US cities
+- Automated API integration with error handling
+- CSV and SQLite database storage
+
+### Statistical Analysis
+- **Descriptive Statistics**: Mean, median, variance, skewness, kurtosis
+- **Time Series Analysis**: Trend detection, moving averages
+- **Correlation Analysis**: Multi-variable relationships
+- **Anomaly Detection**: Z-score and IQR methods
+- **Comparative Analysis**: City-to-city comparisons
+- **Hypothesis Testing**: T-tests for significance
 ## 👨‍💻 Author
 
 Iswarya Mikkili
