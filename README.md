@@ -90,7 +90,7 @@ pytest tests/
 ## 📝 Development Progress
 
 - [x] Project setup and structure
-- [ ] Data ingestion module
+- [X ] Data ingestion module -> working with live data
 - [ ] Database schema and setup
 - [ ] Data processing pipeline
 - [ ] Statistical analysis module
