@@ -381,25 +381,25 @@ class WeatherAnalyzer:
         report = self.generate_summary_report()
         
         print("\n" + "=" * 70)
-        print("📊 COMPREHENSIVE WEATHER ANALYSIS REPORT")
+        print(" COMPREHENSIVE WEATHER ANALYSIS REPORT")
         print("=" * 70)
         
-        print("\n📁 Dataset Information:")
+        print("\n Dataset Information:")
         print(f"   Total Records: {report['dataset_info']['total_records']}")
         print(f"   Cities Analyzed: {report['dataset_info']['cities']}")
         print(f"   Date Range: {report['dataset_info']['date_range']['start']} to {report['dataset_info']['date_range']['end']}")
         
-        print("\n🌡️  Temperature Summary:")
+        print("\n️  Temperature Summary:")
         print(f"   Mean: {report['temperature_summary']['overall_mean']}°C")
         print(f"   Std Dev: {report['temperature_summary']['overall_std']}°C")
         print(f"   Range: {report['temperature_summary']['min']}°C to {report['temperature_summary']['max']}°C")
         
-        print("\n🏆 City Rankings:")
+        print("\n City Rankings:")
         print(f"   Warmest City: {report['city_rankings']['warmest']}")
         print(f"   Coldest City: {report['city_rankings']['coldest']}")
         print(f"   Most Humid City: {report['city_rankings']['most_humid']}")
         
-        print("\n🔗 Strong Correlations:")
+        print("\n Strong Correlations:")
         if report['correlations']:
             for corr in report['correlations']:
                 print(f"   {corr['variable_1']} ↔ {corr['variable_2']}: {corr['correlation']} ({corr['strength']})")
@@ -422,11 +422,11 @@ def main():
     db.close()
     
     if df.empty:
-        print("❌ No data available for analysis")
+        print(" No data available for analysis")
         print("Run data collection first: python src/data_ingestion.py")
         return
     
-    print(f"\n✅ Loaded {len(df)} records for analysis")
+    print(f"\n Loaded {len(df)} records for analysis")
     
     # Initialize analyzer
     analyzer = WeatherAnalyzer(df)
@@ -435,28 +435,28 @@ def main():
     analyzer.print_summary_report()
     
     # Descriptive statistics
-    print("\n📊 Descriptive Statistics (All Cities):")
+    print("\n Descriptive Statistics (All Cities):")
     print(analyzer.get_descriptive_stats())
     
     # City comparison
-    print("\n🌍 City Comparison:")
+    print("\n City Comparison:")
     print(analyzer.get_city_comparison())
     
     # Correlations
-    print("\n🔗 Correlation Matrix:")
+    print("\n Correlation Matrix:")
     print(analyzer.calculate_correlations())
     
     # Trends for first city
     cities = df['city_name'].unique()
     if len(cities) > 0:
         first_city = cities[0]
-        print(f"\n📈 Trend Analysis for {first_city}:")
+        print(f"\n Trend Analysis for {first_city}:")
         trend = analyzer.detect_trends(first_city, 'temperature')
         for key, value in trend.items():
             print(f"   {key}: {value}")
         
         # Anomalies
-        print(f"\n⚠️  Anomalies in {first_city}:")
+        print(f"\n️  Anomalies in {first_city}:")
         anomalies = analyzer.detect_anomalies(first_city, 'temperature')
         if len(anomalies) > 0:
             print(anomalies)
@@ -465,12 +465,12 @@ def main():
     
     # Compare two cities if we have at least 2
     if len(cities) >= 2:
-        print(f"\n🔬 Statistical Test: {cities[0]} vs {cities[1]}:")
+        print(f"\n Statistical Test: {cities[0]} vs {cities[1]}:")
         test_result = analyzer.test_temperature_difference(cities[0], cities[1])
         for key, value in test_result.items():
             print(f"   {key}: {value}")
     
-    print("\n✅ Analysis complete!\n")
+    print("\n Analysis complete!\n")
 
 
 if __name__ == "__main__":

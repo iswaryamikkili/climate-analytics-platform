@@ -85,7 +85,7 @@ class WeatherDatabase:
         ''')
         
         conn.commit()
-        logger.info("✅ Database tables created/verified")
+        logger.info("Database tables created/verified")
     
     def insert_weather_data(self, df: pd.DataFrame) -> int:
         """
@@ -104,7 +104,7 @@ class WeatherDatabase:
             records_after = self.get_record_count()
             inserted = records_after - records_before
             
-            logger.info(f"📝 Inserted {inserted} new records into database")
+            logger.info(f" Inserted {inserted} new records into database")
             return inserted
             
         except sqlite3.IntegrityError as e:
@@ -197,21 +197,21 @@ class WeatherDatabase:
         cities = self.get_all_cities()
         
         print("\n" + "=" * 60)
-        print("📊 DATABASE SUMMARY")
+        print(" DATABASE SUMMARY")
         print("=" * 60)
-        print(f"\n📁 Database: {self.db_path}")
-        print(f"📝 Total Records: {total_records}")
-        print(f"🌍 Cities: {len(cities)}")
+        print(f"\n Database: {self.db_path}")
+        print(f" Total Records: {total_records}")
+        print(f" Cities: {len(cities)}")
         print(f"   {', '.join(cities)}")
         
         if total_records > 0:
             # Get latest record
             latest = self.get_latest_data(1)
-            print(f"\n⏰ Latest Data: {latest.iloc[0]['timestamp']}")
+            print(f"\n Latest Data: {latest.iloc[0]['timestamp']}")
             
             # Temperature stats
             stats = self.get_temperature_stats()
-            print(f"\n🌡️  Overall Temperature Stats:")
+            print(f"\n️  Overall Temperature Stats:")
             print(f"   Average: {stats['avg_temp']}°C")
             print(f"   Min: {stats['min_temp']}°C")
             print(f"   Max: {stats['max_temp']}°C")
@@ -233,16 +233,16 @@ def main():
     # Import data from CSV if it exists
     csv_path = "data/raw/weather_data.csv"
     if os.path.exists(csv_path):
-        print("\n📥 Importing data from CSV to database...")
+        print("\n Importing data from CSV to database...")
         df = pd.read_csv(csv_path)
         inserted = db.insert_weather_data(df)
-        print(f"✅ Imported {inserted} records")
+        print(f" Imported {inserted} records")
     
     # Display summary
     db.get_data_summary()
     
     # Show latest data
-    print("\n📋 Latest 5 Records:")
+    print("\nLatest 5 Records:")
     latest = db.get_latest_data(5)
     print(latest[['timestamp', 'city_name', 'temperature', 'humidity']])
     

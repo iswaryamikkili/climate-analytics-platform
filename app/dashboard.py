@@ -12,11 +12,11 @@ sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 from src.database import WeatherDatabase
 from src.statistical_analysis import WeatherAnalyzer
 from src.data_ingestion import WeatherDataCollector
-from src.ml_models import WeatherPredictor
+from src.ml_models import AdvancedWeatherPredictor
 # Page configuration
 st.set_page_config(
     page_title="Climate Analytics Platform",
-    page_icon="🌤️",
+    page_icon="cloud",
     layout="wide",
     initial_sidebar_state="expanded"
 )
@@ -28,7 +28,7 @@ st.markdown("""
         padding: 0rem 1rem;
     }
     .stMetric {
-        background-color: #f0f2f6;
+        background-color: #00FF00;
         padding: 15px;
         border-radius: 10px;
     }
@@ -68,13 +68,13 @@ def collect_new_data():
 
 # ========== SIDEBAR ==========
 
-st.sidebar.title("🌤️ Climate Analytics")
+st.sidebar.title("Climate Analytics")
 st.sidebar.markdown("---")
 
 # Data refresh button
-if st.sidebar.button("🔄 Collect New Data", width="stretch"):
+if st.sidebar.button("Collect New Data", width="stretch"):
     records = collect_new_data()
-    st.sidebar.success(f"✅ Collected {records} new records!")
+    st.sidebar.success(f" Collected {records} new records!")
     st.cache_data.clear()  # Clear cache to reload data
     st.rerun()
 
@@ -83,8 +83,8 @@ st.sidebar.markdown("---")
 # Navigation
 page = st.sidebar.radio(
     "Navigation",
-    ["📊 Overview", "🌍 City Comparison", "📈 Time Series", 
-     "🔗 Correlations", "⚠️ Anomalies", "🤖 ML & Forecasting", "📋 Raw Data"]
+    ["Overview", "City Comparison", "Time Series", 
+     "Correlations", "️Anomalies", "ML & Forecasting", "Raw Data"]
 )
 
 st.sidebar.markdown("---")
@@ -101,8 +101,8 @@ st.sidebar.info(
 df = load_data()
 
 if df.empty:
-    st.error("❌ No data available!")
-    st.info("👉 Click 'Collect New Data' in the sidebar to get started.")
+    st.error("No data available!")
+    st.info(" Click 'Collect New Data' in the sidebar to get started.")
     st.stop()
 
 # Initialize analyzer
@@ -111,8 +111,8 @@ analyzer = WeatherAnalyzer(df)
 
 # ========== PAGE: OVERVIEW ==========
 
-if page == "📊 Overview":
-    st.title("📊 Weather Analytics Overview")
+if page == "Overview":
+    st.title("Weather Analytics Overview")
     st.markdown("---")
     
     # Key metrics
@@ -152,7 +152,7 @@ if page == "📊 Overview":
     col1, col2 = st.columns(2)
     
     with col1:
-        st.subheader("🌡️ Current Temperature by City")
+        st.subheader("️Current Temperature by City")
         
         # Get latest temperature for each city
         latest_temps = df.groupby('city_name').first().reset_index()
@@ -169,7 +169,7 @@ if page == "📊 Overview":
         st.plotly_chart(fig, width="stretch")
     
     with col2:
-        st.subheader("💧 Current Humidity by City")
+        st.subheader("Current Humidity by City")
         
         fig = px.bar(
             latest_temps,
@@ -183,7 +183,7 @@ if page == "📊 Overview":
         st.plotly_chart(fig, width="stretch")
     
     # Full width chart
-    st.subheader("🌍 Weather Conditions Across Cities")
+    st.subheader("Weather Conditions Across Cities")
     
     # Create summary DataFrame
     summary = df.groupby('city_name').agg({
@@ -198,30 +198,30 @@ if page == "📊 Overview":
     
     # Quick stats
     st.markdown("---")
-    st.subheader("📈 Quick Statistics")
+    st.subheader("Quick Statistics")
     
     col1, col2, col3 = st.columns(3)
     
     with col1:
-        st.write("**🔥 Hottest City**")
+        st.write("** Hottest City**")
         hottest = df.loc[df['temperature'].idxmax()]
         st.write(f"{hottest['city_name']}: {hottest['temperature']:.1f}C")
     
     with col2:
-        st.write("**❄️ Coldest City**")
+        st.write("**️ Coldest City**")
         coldest = df.loc[df['temperature'].idxmin()]
         st.write(f"{coldest['city_name']}: {coldest['temperature']:.1f}C")
     
     with col3:
-        st.write("**💨 Windiest City**")
+        st.write("** Windiest City**")
         windiest = df.loc[df['wind_speed'].idxmax()]
         st.write(f"{windiest['city_name']}: {windiest['wind_speed']:.1f} m/s")
 
 
 # ========== PAGE: CITY COMPARISON ==========
 
-elif page == "🌍 City Comparison":
-    st.title("🌍 City-by-City Comparison")
+elif page == "City Comparison":
+    st.title("City-by-City Comparison")
     st.markdown("---")
     
     # City selector
@@ -234,7 +234,7 @@ elif page == "🌍 City Comparison":
         city2 = st.selectbox("Select Second City", cities, index=1 if len(cities) > 1 else 0)
     
     if city1 == city2:
-        st.warning("⚠️ Please select different cities for comparison")
+        st.warning(" Please select different cities for comparison")
         st.stop()
     
     # Get data for selected cities
@@ -242,7 +242,7 @@ elif page == "🌍 City Comparison":
     city2_data = df[df['city_name'] == city2]
     
     # Comparison metrics
-    st.subheader("📊 Key Metrics Comparison")
+    st.subheader("Key Metrics Comparison")
     
     col1, col2, col3, col4 = st.columns(4)
     
@@ -275,7 +275,7 @@ elif page == "🌍 City Comparison":
     st.markdown("---")
     
     # Statistical test
-    st.subheader("🔬 Statistical Significance Test")
+    st.subheader("Statistical Significance Test")
     test_result = analyzer.test_temperature_difference(city1, city2)
     
     col1, col2 = st.columns(2)
@@ -284,13 +284,13 @@ elif page == "🌍 City Comparison":
         st.write(f"**P-value:** {test_result['p_value']:.4f}")
     with col2:
         if test_result['is_significant']:
-            st.success("✅ Difference is statistically significant (p < 0.05)")
+            st.success("Difference is statistically significant (p < 0.05)")
         else:
-            st.info("ℹ️ Difference is not statistically significant (p ≥ 0.05)")
+            st.info("Difference is not statistically significant (p ≥ 0.05)")
     
     # Visualization
     st.markdown("---")
-    st.subheader("📊 Side-by-Side Comparison")
+    st.subheader("Side-by-Side Comparison")
     
     # Prepare data for comparison
     comparison_df = pd.DataFrame({
@@ -336,8 +336,8 @@ elif page == "🌍 City Comparison":
 
 # ========== PAGE: TIME SERIES ==========
 
-elif page == "📈 Time Series":
-    st.title("📈 Time Series Analysis")
+elif page == "Time Series":
+    st.title("Time Series Analysis")
     st.markdown("---")
     
     # City and variable selectors
@@ -359,7 +359,7 @@ elif page == "📈 Time Series":
     city_data = df[df['city_name'] == selected_city].sort_values('timestamp')
     
     # Trend analysis
-    st.subheader("📊 Trend Analysis")
+    st.subheader("Trend Analysis")
     trend = analyzer.detect_trends(selected_city, variable)
     
     col1, col2, col3 = st.columns(3)
@@ -368,11 +368,11 @@ elif page == "📈 Time Series":
     with col2:
         st.metric("R2 Score", f"{trend['r_squared']:.3f}")
     with col3:
-        status = "✅ Significant" if trend['is_significant'] else "❌ Not Significant"
+        status = "Significant" if trend['is_significant'] else "Not Significant"
         st.metric("Statistical Significance", status)
     
     # Time series plot
-    st.subheader(f"📈 {variable.replace('_', ' ').title()} Over Time")
+    st.subheader(f"{variable.replace('_', ' ').title()} Over Time")
     
     fig = go.Figure()
     
@@ -407,7 +407,7 @@ elif page == "📈 Time Series":
     st.plotly_chart(fig, width="stretch")
     
     # Recent values table
-    st.subheader("📋 Recent Values")
+    st.subheader(" Recent Values")
     recent = city_data.head(10)[['timestamp', variable]].copy()
     recent['timestamp'] = pd.to_datetime(recent['timestamp']).dt.strftime('%Y-%m-%d %H:%M')
     st.dataframe(recent, width="stretch")
@@ -415,8 +415,8 @@ elif page == "📈 Time Series":
 
 # ========== PAGE: CORRELATIONS ==========
 
-elif page == "🔗 Correlations":
-    st.title("🔗 Correlation Analysis")
+elif page == "Correlations":
+    st.title("Correlation Analysis")
     st.markdown("---")
     
     # City selector
@@ -435,7 +435,7 @@ elif page == "🔗 Correlations":
         title_suffix = " - All Cities"
     
     # Correlation heatmap
-    st.subheader(f"🔥 Correlation Heatmap{title_suffix}")
+    st.subheader(f" Correlation Heatmap{title_suffix}")
     
     fig = px.imshow(
         corr_matrix,
@@ -450,7 +450,7 @@ elif page == "🔗 Correlations":
     st.plotly_chart(fig, width="stretch")
     
     # Strong correlations
-    st.subheader("💪 Strong Correlations")
+    st.subheader("Strong Correlations")
     strong_corrs = analyzer.find_strong_correlations(threshold=0.5)
     
     if strong_corrs:
@@ -468,8 +468,8 @@ elif page == "🔗 Correlations":
 
 # ========== PAGE: ANOMALIES ==========
 
-elif page == "⚠️ Anomalies":
-    st.title("⚠️ Anomaly Detection")
+elif page == "Anomalies":
+    st.title("️Anomaly Detection")
     st.markdown("---")
     
     # Selectors
@@ -491,7 +491,7 @@ elif page == "⚠️ Anomalies":
     anomalies = analyzer.detect_anomalies(selected_city, variable, threshold)
     
     # Display results
-    st.subheader("📊 Anomaly Detection Results")
+    st.subheader("Anomaly Detection Results")
     
     col1, col2 = st.columns(2)
     with col1:
@@ -500,16 +500,16 @@ elif page == "⚠️ Anomalies":
         st.metric("Anomalies Detected", len(anomalies))
     
     if len(anomalies) > 0:
-        st.warning(f"⚠️ Found {len(anomalies)} anomalous data points!")
+        st.warning(f"️ Found {len(anomalies)} anomalous data points!")
         
         # Show anomalies
-        st.subheader("📋 Anomalous Records")
+        st.subheader("Anomalous Records")
         anomalies_display = anomalies.copy()
         anomalies_display['timestamp'] = pd.to_datetime(anomalies_display['timestamp']).dt.strftime('%Y-%m-%d %H:%M')
         st.dataframe(anomalies_display, width="stretch")
         
         # Visualization
-        st.subheader("📈 Visualization with Anomalies Highlighted")
+        st.subheader("Visualization with Anomalies Highlighted")
         
         city_data = df[df['city_name'] == selected_city].sort_values('timestamp')
         
@@ -543,456 +543,422 @@ elif page == "⚠️ Anomalies":
         st.plotly_chart(fig, width="stretch")
         
     else:
-        st.success("✅ No anomalies detected in the data!")# ========== PAGE: ML & FORECASTING ==========
-# ========== PAGE: ML & FORECASTING ==========
+        st.success("No anomalies detected in the data!")
 
-elif page == "🤖 ML & Forecasting":
-    st.title("🤖 Machine Learning & Forecasting")
+
+# ========== PAGE: ML & FORECASTING ==========
+elif page == "ML & Forecasting":
+    st.title("Machine Learning & Forecasting")
     st.markdown("---")
-     
+    
+    # Check if enough data
+    if len(df) < 50:
+        st.warning("️Insufficient data for advanced ML models (need at least 50 records)")
+        st.info("Collect more data using the 'Data Collection' page")
+        
+        col1, col2, col3 = st.columns(3)
+        with col1:
+            st.metric("Current Records", len(df))
+        with col2:
+            st.metric("Required Records", 50)
+        with col3:
+            st.metric("Deficit", max(0, 50 - len(df)))
+        
+        st.stop()
     
     # City selector
-    selected_city = st.selectbox("Select City for Analysis", df['city_name'].unique())
+    st.sidebar.markdown("### Model Settings")
+    selected_city = st.sidebar.selectbox("Select City for Analysis", sorted(df['city_name'].unique()))
+    cv_folds = st.sidebar.slider("Cross-Validation Folds", 3, 10, 5)
     
     st.markdown("---")
     
-    # Tabs for different analyses
+    # Initialize predictor
+    @st.cache_resource
+    def get_predictor(data):
+        return AdvancedWeatherPredictor(data)
+    
+    try:
+        predictor = get_predictor(df)
+        city_count = len(predictor.df[predictor.df['city_name'] == selected_city])
+        
+        st.info(f" Loaded {city_count} records for {selected_city}")
+        
+        if city_count < 50:
+            st.error(f" {selected_city} has only {city_count} records. Need at least 50 for training.")
+            st.stop()
+            
+    except Exception as e:
+        st.error(f"Error initializing predictor: {e}")
+        st.stop()
+    
+    # Create tabs
     tab1, tab2, tab3, tab4 = st.tabs([
-        "📊 Model Comparison", 
-        "🌲 Feature Importance", 
-        "🔮 Time Series Forecasting", 
-        "📈 Predictions vs Actual"
+        " Model Comparison",
+        " Feature Importance",
+        " Time Series Forecasting",
+        " Model Diagnostics"
     ])
     
     # ========== TAB 1: MODEL COMPARISON ==========
     with tab1:
-        st.subheader("📊 Model Performance Comparison")
-        st.write(f"Comparing regression models for **{selected_city}**")
+        st.subheader(" Model Performance Comparison")
+        st.markdown("Train multiple models with hyperparameter tuning and cross-validation")
         
-        with st.spinner(f"Training models for {selected_city}..."):
-            try:
-                comparison = predictor.compare_models(selected_city)
-            except Exception as e:
-                st.error(f"Error training models: {e}")
-                comparison = None
-        
-        if comparison is None or len(comparison) == 0:
-            st.error("❌ Unable to train models. Not enough data for this city.")
-            st.info("💡 Collect more data points for this city")
-            st.stop()
-        
-        # Display metrics table
-        st.dataframe(comparison, width="stretch")
-        
-        # Explanation
-        with st.expander("📖 Understanding the Metrics"):
-            st.write("""
-            - **R2 Score**: Measures how well the model explains variance (0-1, higher is better)
-            - **RMSE**: Root Mean Squared Error - average prediction error in C (lower is better)
-            - **MAE**: Mean Absolute Error - average absolute prediction error in C (lower is better)
-            - **Train vs Test**: Train score shows fit on training data, Test shows generalization
-            """)
-        
-        st.markdown("---")
-        
-        # Visualize R2 comparison
-        st.subheader("📈 R2 Score Comparison")
-        
-        fig = go.Figure()
-        
-        fig.add_trace(go.Bar(
-            name='Train R2',
-            x=comparison['Model'],
-            y=comparison['Train R2'],
-            marker_color='lightblue',
-            text=comparison['Train R2'].round(3),
-            textposition='auto',
-        ))
-        
-        fig.add_trace(go.Bar(
-            name='Test R2',
-            x=comparison['Model'],
-            y=comparison['Test R2'],
-            marker_color='darkblue',
-            text=comparison['Test R2'].round(3),
-            textposition='auto',
-        ))
-        
-        fig.update_layout(
-            title="R2 Score Comparison (Higher is Better)",
-            yaxis_title="R2 Score",
-            barmode='group',
-            height=400,
-            yaxis=dict(range=[0, 1])
-        )
-        
-        st.plotly_chart(fig, width="stretch")
-        
-        # Visualize RMSE comparison
-        st.subheader("📉 RMSE Comparison")
-        
-        fig2 = go.Figure()
-        
-        fig2.add_trace(go.Bar(
-            name='Test RMSE',
-            x=comparison['Model'],
-            y=comparison['Test RMSE'],
-            marker_color='coral',
-            text=comparison['Test RMSE'].round(2),
-            textposition='auto',
-        ))
-        
-        fig2.update_layout(
-            title="RMSE Comparison (Lower is Better)",
-            yaxis_title="RMSE (C)",
-            height=400
-        )
-        
-        st.plotly_chart(fig2, width="stretch")
-        
-        # Best model highlight
-        best_model = comparison.iloc[0]['Model']
-        best_r2 = comparison.iloc[0]['Test R2']
-        best_rmse = comparison.iloc[0]['Test RMSE']
-        
-        st.success(f"🏆 **Best Model: {best_model}**")
-        st.write(f"- Test R2 Score: **{best_r2:.4f}**")
-        st.write(f"- Test RMSE: **{best_rmse:.3f}C**")
+        if st.button(" Train All Models", type="primary", use_container_width=True):
+            with st.spinner(" Training models with cross-validation and hyperparameter tuning..."):
+                try:
+                    # Train models
+                    results = predictor.train_with_cv(selected_city, cv_folds=cv_folds)
+                    
+                    if 'error' in results:
+                        st.error(f" Training failed: {results['error']}")
+                    else:
+                        st.success(" Models trained successfully!")
+                        
+                        # Create comparison DataFrame
+                        comparison_data = []
+                        for model_key, model_info in results.items():
+                            comparison_data.append({
+                                'Model': model_info['model_name'],
+                                'Train R²': model_info['train_r2'],
+                                'Test R²': model_info['test_r2'],
+                                'Train RMSE': model_info['train_rmse'],
+                                'Test RMSE': model_info['test_rmse'],
+                                'Test MAE': model_info['test_mae']
+                            })
+                        
+                        comparison_df = pd.DataFrame(comparison_data)
+                        comparison_df = comparison_df.sort_values('Test R²', ascending=False)
+                        
+                        # Display table
+                        st.dataframe(
+                            comparison_df.style.highlight_max(
+                                subset=['Train R²', 'Test R²'], 
+                                color='lightgreen'
+                            ).highlight_min(
+                                subset=['Train RMSE', 'Test RMSE', 'Test MAE'], 
+                                color='lightgreen'
+                            ),
+                            use_container_width=True
+                        )
+                        
+                        # Visualization
+                        col1, col2 = st.columns(2)
+                        
+                        with col1:
+                            # R² Comparison
+                            fig_r2 = go.Figure()
+                            fig_r2.add_trace(go.Bar(
+                                name='Train R²',
+                                x=comparison_df['Model'],
+                                y=comparison_df['Train R²'],
+                                marker_color='lightblue'
+                            ))
+                            fig_r2.add_trace(go.Bar(
+                                name='Test R²',
+                                x=comparison_df['Model'],
+                                y=comparison_df['Test R²'],
+                                marker_color='darkblue'
+                            ))
+                            fig_r2.update_layout(
+                                title="R² Score Comparison",
+                                barmode='group',
+                                height=400,
+                                yaxis_title="R² Score"
+                            )
+                            st.plotly_chart(fig_r2, use_container_width=True)
+                        
+                        with col2:
+                            # RMSE Comparison
+                            fig_rmse = go.Figure()
+                            fig_rmse.add_trace(go.Bar(
+                                name='Train RMSE',
+                                x=comparison_df['Model'],
+                                y=comparison_df['Train RMSE'],
+                                marker_color='lightcoral'
+                            ))
+                            fig_rmse.add_trace(go.Bar(
+                                name='Test RMSE',
+                                x=comparison_df['Model'],
+                                y=comparison_df['Test RMSE'],
+                                marker_color='darkred'
+                            ))
+                            fig_rmse.update_layout(
+                                title="RMSE Comparison",
+                                barmode='group',
+                                height=400,
+                                yaxis_title="RMSE"
+                            )
+                            st.plotly_chart(fig_rmse, use_container_width=True)
+                        
+                        # Best model info
+                        best_model = comparison_df.iloc[0]
+                        st.success(f" Best Model: **{best_model['Model']}** (Test R² = {best_model['Test R²']:.4f})")
+                        
+                        # Show hyperparameters
+                        best_model_key = list(results.keys())[0]  # Best model is first after sorting
+                        for key, info in results.items():
+                            if info['model_name'] == best_model['Model']:
+                                best_model_key = key
+                                break
+                        
+                        if 'best_params' in results[best_model_key]:
+                            st.markdown("#### 🔧 Optimal Hyperparameters")
+                            params_df = pd.DataFrame([results[best_model_key]['best_params']])
+                            st.dataframe(params_df, use_container_width=True)
+                
+                except Exception as e:
+                    st.error(f" Error during training: {str(e)}")
+                    st.exception(e)
     
     # ========== TAB 2: FEATURE IMPORTANCE ==========
     with tab2:
-        st.subheader("🌲 Feature Importance Analysis")
-        st.write("Understanding which weather variables are most important for predictions")
+        st.subheader(" Feature Importance Analysis")
+        st.markdown("Understand which features are most important for predictions")
         
-        model_type = st.radio(
-            "Select Model Type", 
-            ["Random Forest", "Gradient Boosting"], 
-            horizontal=True
-        )
-        
-        model_key = 'rf' if model_type == "Random Forest" else 'gb'
-        
-        importance_df = predictor.get_feature_importance(selected_city, model_key)
-        
-        if importance_df is not None and len(importance_df) > 0:
-            col1, col2 = st.columns([1, 2])
+        if selected_city in predictor.models:
+            results = predictor.models[selected_city]
             
-            with col1:
-                st.write("**Feature Ranking:**")
-                st.dataframe(importance_df, width="stretch")
+            # Find model with feature importance
+            model_with_importance = None
+            for model_key, model_info in results.items():
+                if 'feature_importance' in model_info:
+                    model_with_importance = model_info
+                    break
             
-            with col2:
-                # Visualization
-                fig = px.bar(
-                    importance_df,
-                    x='Importance',
-                    y='Feature',
-                    orientation='h',
-                    title=f"{model_type} - Feature Importance",
-                    color='Importance',
-                    color_continuous_scale='Viridis'
-                )
+            if model_with_importance:
+                # Create feature importance DataFrame
+                importance_dict = model_with_importance['feature_importance']
+                importance_df = pd.DataFrame({
+                    'Feature': list(importance_dict.keys()),
+                    'Importance': list(importance_dict.values())
+                })
+                importance_df = importance_df.sort_values('Importance', ascending=False).head(15)
                 
-                fig.update_layout(height=500, yaxis={'categoryorder':'total ascending'})
-                st.plotly_chart(fig, width="stretch")
-            
-            # Interpretation
-            top_feature = importance_df.iloc[0]['Feature']
-            top_importance = importance_df.iloc[0]['Importance']
-            
-            st.info(f"💡 **Key Insight**: '{top_feature}' is the most important feature with an importance score of {top_importance:.4f}")
-            
-            with st.expander("📖 Feature Descriptions"):
-                st.write("""
-                - **humidity**: Relative humidity percentage
-                - **wind_speed**: Wind speed in m/s
-                - **pressure**: Atmospheric pressure in mb
-                - **cloudiness**: Cloud cover percentage
-                - **hour**: Hour of day (0-23)
-                - **day_of_week**: Day of week (0-6)
-                - **month**: Month of year (1-12)
-                - **temp_lag_1**: Temperature from previous time period
-                - **temp_lag_2**: Temperature from 2 time periods ago
-                """)
+                # Display
+                col1, col2 = st.columns([2, 1])
+                
+                with col1:
+                    # Bar chart
+                    fig = px.bar(
+                        importance_df,
+                        x='Importance',
+                        y='Feature',
+                        orientation='h',
+                        title=f"Top 15 Features - {model_with_importance['model_name']}",
+                        color='Importance',
+                        color_continuous_scale='Blues'
+                    )
+                    fig.update_layout(height=600)
+                    st.plotly_chart(fig, use_container_width=True)
+                
+                with col2:
+                    st.markdown("####  Top 10 Features")
+                    for i, row in importance_df.head(10).iterrows():
+                        st.metric(
+                            label=row['Feature'],
+                            value=f"{row['Importance']:.4f}"
+                        )
+            else:
+                st.info("Train models first to see feature importance")
         else:
-            st.warning("⚠️ Model not trained yet. Please go to the 'Model Comparison' tab first to train models.")
+            st.info("Train models first to see feature importance")
     
     # ========== TAB 3: TIME SERIES FORECASTING ==========
     with tab3:
-        st.subheader("🔮 Time Series Forecasting with ARIMA")
-        st.write("Predict future weather patterns using statistical forecasting")
+        st.subheader(" Advanced Time Series Forecasting")
+        st.markdown("ARIMA forecasting with automatic order selection and diagnostics")
         
         col1, col2 = st.columns(2)
         
         with col1:
-            forecast_steps = st.slider(
-                "Forecast Periods (6-hour intervals)", 
-                min_value=6, 
-                max_value=48, 
-                value=24,
-                help="Number of 6-hour periods to forecast into the future"
+            forecast_variable = st.selectbox(
+                "Select Variable to Forecast",
+                ['temperature', 'humidity', 'wind_speed', 'pressure']
             )
         
         with col2:
-            variable = st.selectbox(
-                "Variable to Forecast", 
-                ['temperature', 'humidity', 'wind_speed'],
-                help="Choose which weather variable to predict"
-            )
+            forecast_steps = st.slider("Forecast Horizon (steps)", 6, 48, 24)
         
-        with st.spinner("Generating forecast... This may take a moment..."):
-            try:
-                forecast_results = predictor.forecast_arima(
-                    selected_city, 
-                    variable=variable,
-                    steps=forecast_steps
-                )
-            except Exception as e:
-                st.error(f"Error generating forecast: {e}")
-                forecast_results = {'error': str(e)}
-        
-        if 'error' in forecast_results:
-            st.error(f"❌ Forecasting failed: {forecast_results['error']}")
-            st.info("💡 Time series forecasting requires at least 20 sequential data points")
-        else:
-            # Display metrics
-            st.write("**Model Performance:**")
-            col1, col2, col3 = st.columns(3)
-            
-            with col1:
-                st.metric("Test RMSE", f"{forecast_results['test_rmse']:.3f}")
-            with col2:
-                st.metric("Test MAE", f"{forecast_results['test_mae']:.3f}")
-            with col3:
-                st.metric("Forecast Steps", forecast_steps)
-            
-            # Visualization
-            st.subheader("📈 Forecast Visualization")
-            
-            # Prepare historical data
-            historical = predictor.df[predictor.df['city_name'] == selected_city].copy()
-            historical = historical.sort_values('timestamp')
-            
-            fig = go.Figure()
-            
-            # Historical data
-            fig.add_trace(go.Scatter(
-                x=historical['timestamp'],
-                y=historical[variable],
-                mode='lines+markers',
-                name='Historical Data',
-                line=dict(color='blue', width=2),
-                marker=dict(size=6)
-            ))
-            
-            # Forecast
-            fig.add_trace(go.Scatter(
-                x=forecast_results['forecast_timestamps'],
-                y=forecast_results['forecast'],
-                mode='lines+markers',
-                name='Forecast',
-                line=dict(color='red', width=2, dash='dash'),
-                marker=dict(size=8, symbol='star')
-            ))
-            
-            fig.update_layout(
-                title=f"{variable.replace('_', ' ').title()} Forecast for {selected_city}",
-                xaxis_title="Time",
-                yaxis_title=variable.replace('_', ' ').title(),
-                height=500,
-                hovermode='x unified',
-                showlegend=True
-            )
-            
-            st.plotly_chart(fig, width="stretch")
-            
-            # Forecast table
-            st.subheader("📋 Detailed Forecast Values")
-            
-            forecast_df = pd.DataFrame({
-                'Timestamp': pd.to_datetime(forecast_results['forecast_timestamps']).strftime('%Y-%m-%d %H:%M'),
-                f'Forecasted {variable.title()}': [f"{x:.2f}" for x in forecast_results['forecast']]
-            })
-            
-            st.dataframe(forecast_df, width="stretch")
-            
-            # Download forecast
-            csv = forecast_df.to_csv(index=False)
-            st.download_button(
-                label="📥 Download Forecast as CSV",
-                data=csv,
-                file_name=f"forecast_{selected_city}_{variable}.csv",
-                mime="text/csv"
-            )
-    
-    # ========== TAB 4: PREDICTIONS VS ACTUAL ==========
-    with tab4:
-        st.subheader("📈 Model Predictions vs Actual Values")
-        st.write("Evaluate how well models predict temperature")
-        
-        model_choice = st.selectbox(
-            "Select Model to Analyze",
-            ["Linear Regression", "Random Forest", "Gradient Boosting"]
-        )
-        
-        model_key_map = {
-            "Linear Regression": f"lr_{selected_city}",
-            "Random Forest": f"rf_{selected_city}",
-            "Gradient Boosting": f"gb_{selected_city}"
-        }
-        
-        model_key = model_key_map[model_choice]
-        
-        if model_key in predictor.models:
-            results = predictor.models[model_key]
-            
-            # Display metrics
-            st.write("**Model Performance Metrics:**")
-            col1, col2, col3, col4 = st.columns(4)
-            
-            with col1:
-                st.metric("Test R2", f"{results['test_r2']:.4f}")
-            with col2:
-                st.metric("Test RMSE", f"{results['test_rmse']:.3f}C")
-            with col3:
-                st.metric("Test MAE", f"{results['test_mae']:.3f}C")
-            with col4:
-                st.metric("Train R2", f"{results['train_r2']:.4f}")
-            
-            st.markdown("---")
-            
-            # Scatter plot: Predicted vs Actual
-            st.subheader("🎯 Predicted vs Actual Temperature")
-            
-            fig = go.Figure()
-            
-            # Scatter plot
-            fig.add_trace(go.Scatter(
-                x=results['y_test'],
-                y=results['y_pred'],
-                mode='markers',
-                name='Predictions',
-                marker=dict(
-                    size=10, 
-                    color=results['y_test'] - results['y_pred'],
-                    colorscale='RdYlGn_r',
-                    showscale=True,
-                    colorbar=dict(title="Error (C)"),
-                    opacity=0.7,
-                    line=dict(width=1, color='white')
-                ),
-                text=[f"Actual: {a:.1f}C<br>Predicted: {p:.1f}C<br>Error: {a-p:.1f}C" 
-                      for a, p in zip(results['y_test'], results['y_pred'])],
-                hovertemplate='%{text}<extra></extra>'
-            ))
-            
-            # Perfect prediction line (45-degree line)
-            min_val = min(results['y_test'].min(), results['y_pred'].min())
-            max_val = max(results['y_test'].max(), results['y_pred'].max())
-            
-            fig.add_trace(go.Scatter(
-                x=[min_val, max_val],
-                y=[min_val, max_val],
-                mode='lines',
-                name='Perfect Prediction',
-                line=dict(color='red', dash='dash', width=2)
-            ))
-            
-            fig.update_layout(
-                xaxis_title="Actual Temperature (C)",
-                yaxis_title="Predicted Temperature (C)",
-                height=500,
-                showlegend=True
-            )
-            
-            st.plotly_chart(fig, width="stretch")
-            
-            st.info("💡 Points closer to the red line indicate better predictions")
-            
-            # Residual analysis
-            st.markdown("---")
-            st.subheader("📊 Residual Analysis")
-            
-            residuals = results['y_test'] - results['y_pred']
-            
-            col1, col2 = st.columns(2)
-            
-            with col1:
-                # Residual histogram
-                fig2 = go.Figure()
-                fig2.add_trace(go.Histogram(
-                    x=residuals,
-                    nbinsx=20,
-                    name='Residuals',
-                    marker_color='lightblue',
-                    marker_line_color='darkblue',
-                    marker_line_width=1
-                ))
-                
-                fig2.update_layout(
-                    title="Distribution of Residuals",
-                    xaxis_title="Residual (Actual - Predicted) C",
-                    yaxis_title="Frequency",
-                    height=400,
-                    showlegend=False
-                )
-                
-                st.plotly_chart(fig2, width="stretch")
-            
-            with col2:
-                # Residual scatter
-                fig3 = go.Figure()
-                fig3.add_trace(go.Scatter(
-                    x=results['y_pred'],
-                    y=residuals,
-                    mode='markers',
-                    marker=dict(
-                        size=8,
-                        color='coral',
-                        opacity=0.6,
-                        line=dict(width=1, color='white')
+        if st.button(" Generate Forecast", type="primary", use_container_width=True):
+            with st.spinner(" Running ARIMA analysis with automatic order selection..."):
+                try:
+                    forecast_results = predictor.forecast_arima_auto(
+                        selected_city, 
+                        variable=forecast_variable,
+                        steps=forecast_steps
                     )
-                ))
+                    
+                    if 'error' in forecast_results:
+                        st.error(f" Forecasting failed: {forecast_results['error']}")
+                    else:
+                        st.success(" Forecast generated successfully!")
+                        
+                        # Metrics
+                        col1, col2, col3, col4 = st.columns(4)
+                        
+                        with col1:
+                            st.metric("ARIMA Order", str(forecast_results['optimal_order']))
+                        with col2:
+                            st.metric("Test RMSE", f"{forecast_results['test_rmse']:.3f}")
+                        with col3:
+                            st.metric("Test MAE", f"{forecast_results['test_mae']:.3f}")
+                        with col4:
+                            st.metric("Test MAPE", f"{forecast_results['test_mape']:.2f}%")
+                        
+                        # Stationarity test
+                        st.markdown("#### 🔬 Stationarity Test")
+                        stationarity = forecast_results['stationarity_test']
+                        col1, col2, col3 = st.columns(3)
+                        
+                        with col1:
+                            st.metric("ADF Statistic", f"{stationarity['adf_statistic']:.4f}")
+                        with col2:
+                            st.metric("p-value", f"{stationarity['p_value']:.4f}")
+                        with col3:
+                            status = "Stationary" if stationarity['is_stationary'] else "⚠️ Non-stationary"
+                            st.metric("Status", status)
+                        
+                        # Forecast plot
+                        st.markdown("#### 📊 Forecast Visualization")
+                        
+                        fig = go.Figure()
+                        
+                        # Forecast line
+                        fig.add_trace(go.Scatter(
+                            x=forecast_results['forecast_timestamps'],
+                            y=forecast_results['forecast'],
+                            mode='lines+markers',
+                            name='Forecast',
+                            line=dict(color='blue', width=2)
+                        ))
+                        
+                        # Confidence intervals
+                        fig.add_trace(go.Scatter(
+                            x=forecast_results['forecast_timestamps'],
+                            y=forecast_results['forecast_upper'],
+                            mode='lines',
+                            name='Upper 95% CI',
+                            line=dict(color='lightblue', dash='dash'),
+                            showlegend=True
+                        ))
+                        
+                        fig.add_trace(go.Scatter(
+                            x=forecast_results['forecast_timestamps'],
+                            y=forecast_results['forecast_lower'],
+                            mode='lines',
+                            name='Lower 95% CI',
+                            line=dict(color='lightblue', dash='dash'),
+                            fill='tonexty',
+                            fillcolor='rgba(173, 216, 230, 0.3)',
+                            showlegend=True
+                        ))
+                        
+                        fig.update_layout(
+                            title=f"{forecast_variable.title()} Forecast with 95% Confidence Intervals",
+                            xaxis_title="Timestamp",
+                            yaxis_title=forecast_variable.title(),
+                            height=500,
+                            hovermode='x unified'
+                        )
+                        
+                        st.plotly_chart(fig, use_container_width=True)
+                        
+                        # Forecast table
+                        st.markdown("#### 📋 Detailed Forecast")
+                        forecast_df = pd.DataFrame({
+                            'Timestamp': forecast_results['forecast_timestamps'],
+                            'Forecast': forecast_results['forecast'],
+                            'Lower CI': forecast_results['forecast_lower'],
+                            'Upper CI': forecast_results['forecast_upper']
+                        })
+                        st.dataframe(forecast_df.head(10), use_container_width=True)
                 
-                # Zero line
-                fig3.add_hline(y=0, line_dash="dash", line_color="red")
+                except Exception as e:
+                    st.error(f"❌ Error during forecasting: {str(e)}")
+                    st.exception(e)
+    
+    # ========== TAB 4: MODEL DIAGNOSTICS ==========
+    with tab4:
+        st.subheader("🎯 Model Diagnostics & Validation")
+        st.markdown("Detailed residual analysis and model validation metrics")
+        
+        if selected_city in predictor.models:
+            results = predictor.models[selected_city]
+            
+            # Model selector
+            model_names = [info['model_name'] for info in results.values()]
+            selected_model_name = st.selectbox("Select Model", model_names)
+            
+            # Find selected model
+            selected_model_info = None
+            for model_info in results.values():
+                if model_info['model_name'] == selected_model_name:
+                    selected_model_info = model_info
+                    break
+            
+            if selected_model_info and 'residual_diagnostics' in selected_model_info:
+                diag = selected_model_info['residual_diagnostics']
                 
-                fig3.update_layout(
-                    title="Residuals vs Predicted",
-                    xaxis_title="Predicted Temperature (C)",
-                    yaxis_title="Residual (C)",
-                    height=400
-                )
+                st.markdown("#### 📊 Residual Statistics")
                 
-                st.plotly_chart(fig3, width="stretch")
+                col1, col2, col3, col4 = st.columns(4)
+                
+                with col1:
+                    st.metric("Residual Mean", f"{diag['residual_mean']:.6f}")
+                    st.caption("Should be close to 0")
+                
+                with col2:
+                    st.metric("Residual Std Dev", f"{diag['residual_std']:.4f}")
+                
+                with col3:
+                    normality_status = "✅ Yes" if diag['is_normal'] else "⚠️ No"
+                    st.metric("Normal Distribution", normality_status)
+                    st.caption(f"p-value: {diag['shapiro_p_value']:.4f}")
+                
+                with col4:
+                    hetero_status = "⚠️ Yes" if diag['potential_heteroscedasticity'] else "✅ No"
+                    st.metric("Heteroscedasticity", hetero_status)
+                    st.caption(f"Variance ratio: {diag['variance_ratio']:.2f}")
+                
+                # Interpretation
+                st.markdown("#### 🔍 Interpretation")
+                
+                if abs(diag['residual_mean']) < 0.01:
+                    st.success("✅ Residual mean is close to zero - model is unbiased")
+                else:
+                    st.warning("⚠️ Residual mean deviates from zero - model may have systematic bias")
+                
+                if diag['is_normal']:
+                    st.success("✅ Residuals are normally distributed - model assumptions satisfied")
+                else:
+                    st.info("ℹ️ Residuals are not normally distributed - consider model transformation")
+                
+                if not diag['potential_heteroscedasticity']:
+                    st.success("✅ No signs of heteroscedasticity - variance is constant")
+                else:
+                    st.warning("⚠️ Potential heteroscedasticity detected - variance may not be constant")
             
-            # Residual statistics
-            mean_residual = residuals.mean()
-            std_residual = residuals.std()
-            
-            col1, col2, col3 = st.columns(3)
-            with col1:
-                st.metric("Mean Residual", f"{mean_residual:.3f}C")
-            with col2:
-                st.metric("Std Dev Residual", f"{std_residual:.3f}C")
-            with col3:
-                st.metric("Max Error", f"{abs(residuals).max():.3f}C")
-            
-            
+            else:
+                st.info("Train models first to see diagnostics")
         else:
-            st.warning("⚠️ Model not trained yet. Please visit the 'Model Comparison' tab first to train models.")
-            
-            if st.button("🚀 Train Models Now"):
-                st.rerun()
+            st.info("Train models first to see diagnostics")
+
+
+
+
+
+
             
 # ========== PAGE: RAW DATA ==========
 
-elif page == "📋 Raw Data":
-    st.title("📋 Raw Data Explorer")
+elif page == " Raw Data":
+    st.title(" Raw Data Explorer")
     st.markdown("---")
     
     # Filters
-    st.subheader("🔍 Filters")
+    st.subheader("Filters")
     col1, col2 = st.columns(2)
     
     with col1:
@@ -1009,13 +975,13 @@ elif page == "📋 Raw Data":
     filtered_df = df[df['city_name'].isin(selected_cities)].head(num_records)
     
     # Display data
-    st.subheader(f"📊 Showing {len(filtered_df)} records")
+    st.subheader(f" Showing {len(filtered_df)} records")
     st.dataframe(filtered_df, width="stretch")
     
     # Download button
     csv = filtered_df.to_csv(index=False)
     st.download_button(
-        label="📥 Download as CSV",
+        label=" Download as CSV",
         data=csv,
         file_name="weather_data.csv",
         mime="text/csv"
@@ -1023,7 +989,7 @@ elif page == "📋 Raw Data":
     
     # Database stats
     st.markdown("---")
-    st.subheader("💾 Database Statistics")
+    st.subheader(" Database Statistics")
     
     col1, col2, col3, col4 = st.columns(4)
     

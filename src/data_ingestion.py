@@ -53,15 +53,15 @@ class WeatherDataCollector:
             response.raise_for_status()
             
             data = response.json()
-            logger.info(f"✅ Successfully fetched data for {city_name}")
+            logger.info(f" Successfully fetched data for {city_name}")
             return data
             
         except requests.exceptions.HTTPError as e:
             # Special handling for 401 errors
             if response.status_code == 401:
-                logger.error(f"❌ Error fetching weather data for {city_name}: {e}")
+                logger.error(f" Error fetching weather data for {city_name}: {e}")
                 logger.error("=" * 60)
-                logger.error("🔑 API KEY AUTHENTICATION FAILED!")
+                logger.error(" API KEY AUTHENTICATION FAILED!")
                 logger.error("=" * 60)
                 logger.error("Possible causes:")
                 logger.error("  1. API key is new (needs 10-15 min to activate)")
@@ -72,10 +72,10 @@ class WeatherDataCollector:
                 logger.error("\nVerify at: https://openweathermap.org/api_keys")
                 logger.error("=" * 60)
             else:
-                logger.error(f"❌ Error fetching weather data for {city_name}: {e}")
+                logger.error(f" Error fetching weather data for {city_name}: {e}")
             return None
         except requests.exceptions.RequestException as e:
-           logger.error(f"❌ Network error for {city_name}: {e}")
+           logger.error(f"Network error for {city_name}: {e}")
            return None
     def parse_weather_data(self, weather_data: Dict, city_name: str, 
                           lat: float, lon: float) -> Dict:
@@ -143,7 +143,7 @@ class WeatherDataCollector:
         df = pd.DataFrame(data_records)
         
         logger.info("=" * 60)
-        logger.info(f"✅ Data collection complete! Collected {len(df)} records")
+        logger.info(f"Data collection complete! Collected {len(df)} records")
         logger.info("=" * 60)
         
         return df
@@ -157,10 +157,10 @@ class WeatherDataCollector:
         # Append if file exists, otherwise create new
         if os.path.exists(filepath):
             df.to_csv(filepath, mode='a', header=False, index=False)
-            logger.info(f"📝 Appended {len(df)} records to {filepath}")
+            logger.info(f" Appended {len(df)} records to {filepath}")
         else:
             df.to_csv(filepath, index=False)
-            logger.info(f"📝 Created new file {filepath} with {len(df)} records")
+            logger.info(f" Created new file {filepath} with {len(df)} records")
     
     def display_summary(self, df: pd.DataFrame):
         """Display summary statistics of collected data"""
@@ -169,19 +169,19 @@ class WeatherDataCollector:
             return
         
         print("\n" + "=" * 60)
-        print("📊 DATA COLLECTION SUMMARY")
+        print("DATA COLLECTION SUMMARY")
         print("=" * 60)
-        print(f"\n🌍 Cities: {df['city_name'].tolist()}")
-        print(f"\n🌡️  Temperature Statistics (°C):")
+        print(f"\n Cities: {df['city_name'].tolist()}")
+        print(f"\n️  Temperature Statistics (°C):")
         print(f"   Average: {df['temperature'].mean():.1f}°C")
         print(f"   Min: {df['temperature'].min():.1f}°C ({df.loc[df['temperature'].idxmin(), 'city_name']})")
         print(f"   Max: {df['temperature'].max():.1f}°C ({df.loc[df['temperature'].idxmax(), 'city_name']})")
         
-        print(f"\n💨 Wind Speed: {df['wind_speed'].mean():.1f} m/s (average)")
-        print(f"💧 Humidity: {df['humidity'].mean():.0f}% (average)")
-        print(f"☁️  Cloudiness: {df['cloudiness'].mean():.0f}% (average)")
+        print(f"\n Wind Speed: {df['wind_speed'].mean():.1f} m/s (average)")
+        print(f" Humidity: {df['humidity'].mean():.0f}% (average)")
+        print(f"️  Cloudiness: {df['cloudiness'].mean():.0f}% (average)")
         
-        print("\n📋 Sample Data:")
+        print("\n Sample Data:")
         print(df[['city_name', 'temperature', 'humidity', 'weather_description']].to_string(index=False))
         print("=" * 60 + "\n")
 
@@ -207,14 +207,14 @@ def main():
         db.insert_weather_data(weather_df)
         db.get_data_summary()
         db.close()
-        print("✅ SUCCESS! Data collection and storage complete.\n")
+        print(" SUCCESS! Data collection and storage complete.\n")
         
         return weather_df
         
     except FileNotFoundError:
-        logger.error("❌ Config file not found! Make sure config/config.yaml exists with your API key.")
+        logger.error(" Config file not found! Make sure config/config.yaml exists with your API key.")
     except Exception as e:
-        logger.error(f"❌ An error occurred: {e}")
+        logger.error(f" An error occurred: {e}")
         raise
 
 
