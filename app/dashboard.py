@@ -13,10 +13,11 @@ from src.database import WeatherDatabase
 from src.statistical_analysis import WeatherAnalyzer
 from src.anomaly_detection import AnomalyDetector
 from src.data_ingestion import WeatherDataCollector
+
 # Page configuration
 st.set_page_config(
     page_title="Climate Analytics Platform",
-    page_icon="cloud",
+    page_icon="🌤️",
     layout="wide",
     initial_sidebar_state="expanded"
 )
@@ -28,7 +29,7 @@ st.markdown("""
         padding: 0rem 1rem;
     }
     .stMetric {
-        background-color: #00FF00;
+        background-color: #f0f2f6;
         padding: 15px;
         border-radius: 10px;
     }
@@ -44,37 +45,47 @@ st.markdown("""
 @st.cache_data(ttl=300)  # Cache for 5 minutes
 def load_data():
     """Load data from database"""
-    db = WeatherDatabase()
-    conn = db.get_connection()
-    df = pd.read_sql_query("SELECT * FROM weather_data ORDER BY timestamp DESC", conn)
-    db.close()
-    return df
+    try:
+        db = WeatherDatabase()
+        with db.get_connection() as conn:
+            df = pd.read_sql_query("SELECT * FROM weather_data ORDER BY timestamp DESC", conn)
+        return df
+    except Exception as e:
+        st.error(f"Database error: {str(e)}")
+        return pd.DataFrame()
 
 
 def collect_new_data():
     """Collect fresh weather data"""
     with st.spinner("Collecting fresh weather data..."):
-        collector = WeatherDataCollector()
-        weather_df = collector.collect_all_cities()
-        
-        # Save to database
-        from src.database import WeatherDatabase
-        db = WeatherDatabase()
-        inserted = db.insert_weather_data(weather_df)
-        db.close()
-        
-        return inserted
+        try:
+            collector = WeatherDataCollector()
+            weather_df = collector.collect_all_cities()
+            
+            # Save to database
+            db = WeatherDatabase()
+            result = db.insert_weather_data(weather_df)
+            
+            if isinstance(result, dict):
+                inserted = result.get('inserted', 0)
+            else:
+                inserted = result
+            
+            return inserted
+        except Exception as e:
+            st.error(f"Collection error: {str(e)}")
+            return 0
 
 
 # ========== SIDEBAR ==========
 
-st.sidebar.title("Climate Analytics")
+st.sidebar.title("🌤️ Climate Analytics")
 st.sidebar.markdown("---")
 
 # Data refresh button
-if st.sidebar.button("Collect New Data", width="stretch"):
+if st.sidebar.button("🔄 Collect New Data", use_container_width=True):
     records = collect_new_data()
-    st.sidebar.success(f" Collected {records} new records!")
+    st.sidebar.success(f"✅ Collected {records} new records!")
     st.cache_data.clear()  # Clear cache to reload data
     st.rerun()
 
@@ -84,15 +95,15 @@ st.sidebar.markdown("---")
 page = st.sidebar.radio(
     "Navigation",
     ["Overview", "City Comparison", "Time Series", 
-     "Correlations","Anomalies", "Raw Data"]
+     "Correlations", "Advanced Analysis", "Anomalies", "Raw Data"]
 )
 
 st.sidebar.markdown("---")
 st.sidebar.markdown("### About")
 st.sidebar.info(
     "**Climate Analytics Platform**\n\n"
-    "Real-time weather data analysis with statistical insights.\n\n"
-    "Built with Python, Streamlit, Pandas, and Plotly."
+    "Real-time weather data analysis with advanced statistical insights and ML.\n\n"
+    "Built with Python, Streamlit, Pandas, Plotly, and Scikit-learn."
 )
 
 
@@ -101,18 +112,18 @@ st.sidebar.info(
 df = load_data()
 
 if df.empty:
-    st.error("No data available!")
-    st.info(" Click 'Collect New Data' in the sidebar to get started.")
+    st.error("❌ No data available!")
+    st.info("👉 Click 'Collect New Data' in the sidebar to get started.")
     st.stop()
 
-# Initialize analyzer
+# Initialize analyzers
 analyzer = WeatherAnalyzer(df)
 detector = AnomalyDetector(df)
 
 # ========== PAGE: OVERVIEW ==========
 
 if page == "Overview":
-    st.title("Weather Analytics Overview")
+    st.title("🌍 Weather Analytics Overview")
     st.markdown("---")
     
     # Key metrics
@@ -135,7 +146,7 @@ if page == "Overview":
         avg_temp = df['temperature'].mean()
         st.metric(
             "Avg Temperature",
-            f"{avg_temp:.1f}C",
+            f"{avg_temp:.1f}°C",
             delta=None
         )
     
@@ -152,7 +163,7 @@ if page == "Overview":
     col1, col2 = st.columns(2)
     
     with col1:
-        st.subheader("️Current Temperature by City")
+        st.subheader("🌡️ Current Temperature by City")
         
         # Get latest temperature for each city
         latest_temps = df.groupby('city_name').first().reset_index()
@@ -163,13 +174,13 @@ if page == "Overview":
             y='temperature',
             color='temperature',
             color_continuous_scale='RdYlBu_r',
-            labels={'temperature': 'Temperature (C)', 'city_name': 'City'}
+            labels={'temperature': 'Temperature (°C)', 'city_name': 'City'}
         )
         fig.update_layout(height=400, showlegend=False)
-        st.plotly_chart(fig, width="stretch")
+        st.plotly_chart(fig, use_container_width=True)
     
     with col2:
-        st.subheader("Current Humidity by City")
+        st.subheader("💧 Current Humidity by City")
         
         fig = px.bar(
             latest_temps,
@@ -180,10 +191,10 @@ if page == "Overview":
             labels={'humidity': 'Humidity (%)', 'city_name': 'City'}
         )
         fig.update_layout(height=400, showlegend=False)
-        st.plotly_chart(fig, width="stretch")
+        st.plotly_chart(fig, use_container_width=True)
     
     # Full width chart
-    st.subheader("Weather Conditions Across Cities")
+    st.subheader("📊 Weather Conditions Across Cities")
     
     # Create summary DataFrame
     summary = df.groupby('city_name').agg({
@@ -194,26 +205,26 @@ if page == "Overview":
     }).round(2).reset_index()
     
     # Display as table
-    st.dataframe(summary, width="stretch")
+    st.dataframe(summary, use_container_width=True)
     
     # Quick stats
     st.markdown("---")
-    st.subheader("Quick Statistics")
+    st.subheader("🏆 Quick Statistics")
     
     col1, col2, col3 = st.columns(3)
     
     with col1:
-        st.write("** Hottest City**")
+        st.write("**🔥 Hottest City**")
         hottest = df.loc[df['temperature'].idxmax()]
-        st.write(f"{hottest['city_name']}: {hottest['temperature']:.1f}C")
+        st.write(f"{hottest['city_name']}: {hottest['temperature']:.1f}°C")
     
     with col2:
-        st.write("**️ Coldest City**")
+        st.write("**❄️ Coldest City**")
         coldest = df.loc[df['temperature'].idxmin()]
-        st.write(f"{coldest['city_name']}: {coldest['temperature']:.1f}C")
+        st.write(f"{coldest['city_name']}: {coldest['temperature']:.1f}°C")
     
     with col3:
-        st.write("** Windiest City**")
+        st.write("**💨 Windiest City**")
         windiest = df.loc[df['wind_speed'].idxmax()]
         st.write(f"{windiest['city_name']}: {windiest['wind_speed']:.1f} m/s")
 
@@ -221,7 +232,7 @@ if page == "Overview":
 # ========== PAGE: CITY COMPARISON ==========
 
 elif page == "City Comparison":
-    st.title("City-by-City Comparison")
+    st.title("🏙️ City-by-City Comparison")
     st.markdown("---")
     
     # City selector
@@ -234,7 +245,7 @@ elif page == "City Comparison":
         city2 = st.selectbox("Select Second City", cities, index=1 if len(cities) > 1 else 0)
     
     if city1 == city2:
-        st.warning(" Please select different cities for comparison")
+        st.warning("⚠️ Please select different cities for comparison")
         st.stop()
     
     # Get data for selected cities
@@ -242,21 +253,21 @@ elif page == "City Comparison":
     city2_data = df[df['city_name'] == city2]
     
     # Comparison metrics
-    st.subheader("Key Metrics Comparison")
+    st.subheader("📊 Key Metrics Comparison")
     
     col1, col2, col3, col4 = st.columns(4)
     
     with col1:
         st.metric(
             f"{city1}",
-            f"{city1_data['temperature'].mean():.1f}C",
-            delta=f"{city1_data['temperature'].mean() - city2_data['temperature'].mean():.1f}C"
+            f"{city1_data['temperature'].mean():.1f}°C",
+            delta=f"{city1_data['temperature'].mean() - city2_data['temperature'].mean():.1f}°C"
         )
     
     with col2:
         st.metric(
             f"{city2}",
-            f"{city2_data['temperature'].mean():.1f}C"
+            f"{city2_data['temperature'].mean():.1f}°C"
         )
     
     with col3:
@@ -274,23 +285,54 @@ elif page == "City Comparison":
     
     st.markdown("---")
     
-    # Statistical test
-    st.subheader("Statistical Significance Test")
+    # Statistical test - UPDATED SECTION
+    st.subheader("🔬 Statistical Significance Test")
+    
     test_result = analyzer.test_temperature_difference(city1, city2)
     
-    col1, col2 = st.columns(2)
-    with col1:
-        st.write(f"**Temperature Difference:** {abs(test_result['difference']):.2f}C")
-        st.write(f"**P-value:** {test_result['p_value']:.4f}")
-    with col2:
+    if 'error' in test_result:
+        st.error(test_result['error'])
+    else:
+        # Show which test was used
+        st.info(f"**Test Used:** {test_result['test_used']}")
+        
+        # Main results
+        col1, col2, col3 = st.columns(3)
+        with col1:
+            st.metric("Difference", f"{test_result['difference']:.2f}°C")
+        with col2:
+            st.metric("P-value", f"{test_result['p_value']:.4f}")
+        with col3:
+            st.metric("Effect Size", 
+                     f"{test_result['effect_size']:.3f}",
+                     delta=test_result['effect_interpretation'])
+        
+        # Confidence interval
+        st.write(f"**95% Confidence Interval:** [{test_result['ci_95_lower']:.2f}°C, {test_result['ci_95_upper']:.2f}°C]")
+        
+        # Interpretation
         if test_result['is_significant']:
-            st.success("Difference is statistically significant (p < 0.05)")
+            st.success(f"✅ {test_result['interpretation']}")
         else:
-            st.info("Difference is not statistically significant (p ≥ 0.05)")
+            st.info(f"ℹ️ {test_result['interpretation']}")
+        
+        # Show assumption checks (expandable)
+        with st.expander("📋 View Statistical Assumptions"):
+            st.write("**Normality Tests:**")
+            st.write(f"- {city1}: p={test_result['assumptions']['normality_city1']['p_value']} "
+                    f"({'✓ Met' if test_result['assumptions']['normality_city1']['met'] == 'yes' else '✗ Violated'})")
+            st.write(f"- {city2}: p={test_result['assumptions']['normality_city2']['p_value']} "
+                    f"({'✓ Met' if test_result['assumptions']['normality_city2']['met'] == 'yes' else '✗ Violated'})")
+            
+            st.write(f"\n**Equal Variance (Levene's Test):**")
+            st.write(f"- p={test_result['assumptions']['equal_variance']['p_value']} "
+                    f"({'✓ Met' if test_result['assumptions']['equal_variance']['met'] == 'yes' else '✗ Violated'})")
+            
+            st.info("💡 The test automatically selects the most appropriate method based on these assumptions.")
     
     # Visualization
     st.markdown("---")
-    st.subheader("Side-by-Side Comparison")
+    st.subheader("📈 Side-by-Side Comparison")
     
     # Prepare data for comparison
     comparison_df = pd.DataFrame({
@@ -303,7 +345,7 @@ elif page == "City Comparison":
     # Box plots
     fig = make_subplots(
         rows=1, cols=3,
-        subplot_titles=('Temperature (C)', 'Humidity (%)', 'Wind Speed (m/s)')
+        subplot_titles=('Temperature (°C)', 'Humidity (%)', 'Wind Speed (m/s)')
     )
     
     # Temperature
@@ -331,13 +373,13 @@ elif page == "City Comparison":
         )
     
     fig.update_layout(height=400, showlegend=True)
-    st.plotly_chart(fig, width="stretch")
+    st.plotly_chart(fig, use_container_width=True)
 
 
 # ========== PAGE: TIME SERIES ==========
 
 elif page == "Time Series":
-    st.title("Time Series Analysis")
+    st.title("📈 Time Series Analysis")
     st.markdown("---")
     
     # City and variable selectors
@@ -358,21 +400,50 @@ elif page == "Time Series":
     # Get city data
     city_data = df[df['city_name'] == selected_city].sort_values('timestamp')
     
-    # Trend analysis
-    st.subheader("Trend Analysis")
+    # Trend analysis - UPDATED SECTION
+    st.subheader("📊 Trend Analysis")
+    
     trend = analyzer.detect_trends(selected_city, variable)
     
-    col1, col2, col3 = st.columns(3)
-    with col1:
-        st.metric("Trend Direction", trend['trend_direction'].upper())
-    with col2:
-        st.metric("R2 Score", f"{trend['r_squared']:.3f}")
-    with col3:
-        status = "Significant" if trend['is_significant'] else "Not Significant"
-        st.metric("Statistical Significance", status)
+    if 'error' in trend:
+        st.warning(trend['error'])
+    else:
+        # Main metrics
+        col1, col2, col3, col4 = st.columns(4)
+        with col1:
+            st.metric("Trend Direction", trend['trend_direction'].upper())
+        with col2:
+            st.metric("R² Score", f"{trend['r_squared']:.3f}")
+        with col3:
+            st.metric("Slope", f"{trend['slope']:.6f}")
+        with col4:
+            sig_icon = "✓" if trend['is_significant'] else "✗"
+            st.metric("Significant", f"{sig_icon} (p={trend['p_value']:.3f})")
+        
+        # Interpretation
+        st.info(f"**Interpretation:** {trend['interpretation']}")
+        
+        # Show diagnostics (expandable)
+        if 'diagnostics' in trend and trend['diagnostics']:
+            with st.expander("🔍 View Regression Diagnostics"):
+                diag = trend['diagnostics']
+                
+                if 'normality' in diag:
+                    st.write("**Normality of Residuals:**")
+                    st.write(f"- {diag['normality']['interpretation']} (p={diag['normality']['p_value']})")
+                
+                if 'independence' in diag:
+                    st.write("\n**Independence (No Autocorrelation):**")
+                    st.write(f"- {diag['independence']['interpretation']} (DW={diag['independence']['statistic']})")
+                
+                if 'homoscedasticity' in diag:
+                    st.write("\n**Homoscedasticity (Constant Variance):**")
+                    st.write(f"- {diag['homoscedasticity']['interpretation']} (p={diag['homoscedasticity']['p_value']})")
+                
+                st.caption("✓ = Assumption met | ✗ = Assumption violated")
     
     # Time series plot
-    st.subheader(f"{variable.replace('_', ' ').title()} Over Time")
+    st.subheader(f"📉 {variable.replace('_', ' ').title()} Over Time")
     
     fig = go.Figure()
     
@@ -404,19 +475,19 @@ elif page == "Time Series":
         hovermode='x unified'
     )
     
-    st.plotly_chart(fig, width="stretch")
+    st.plotly_chart(fig, use_container_width=True)
     
     # Recent values table
-    st.subheader(" Recent Values")
+    st.subheader("📋 Recent Values")
     recent = city_data.head(10)[['timestamp', variable]].copy()
     recent['timestamp'] = pd.to_datetime(recent['timestamp']).dt.strftime('%Y-%m-%d %H:%M')
-    st.dataframe(recent, width="stretch")
+    st.dataframe(recent, use_container_width=True)
 
 
 # ========== PAGE: CORRELATIONS ==========
 
 elif page == "Correlations":
-    st.title("Correlation Analysis")
+    st.title("🔗 Correlation Analysis")
     st.markdown("---")
     
     # City selector
@@ -435,7 +506,7 @@ elif page == "Correlations":
         title_suffix = " - All Cities"
     
     # Correlation heatmap
-    st.subheader(f" Correlation Heatmap{title_suffix}")
+    st.subheader(f"🔥 Correlation Heatmap{title_suffix}")
     
     fig = px.imshow(
         corr_matrix,
@@ -447,32 +518,140 @@ elif page == "Correlations":
     )
     
     fig.update_layout(height=600)
-    st.plotly_chart(fig, width="stretch")
+    st.plotly_chart(fig, use_container_width=True)
     
     # Strong correlations
-    st.subheader("Strong Correlations")
+    st.subheader("💪 Strong Correlations")
     strong_corrs = analyzer.find_strong_correlations(threshold=0.5)
     
     if strong_corrs:
         for corr in strong_corrs:
-            col1, col2, col3 = st.columns([2, 2, 1])
+            col1, col2, col3, col4 = st.columns([2, 2, 1, 1])
             with col1:
                 st.write(f"**{corr['variable_1']}**")
             with col2:
                 st.write(f"**{corr['variable_2']}**")
             with col3:
                 st.write(f"**{corr['correlation']}**")
+            with col4:
+                sig = "✓" if corr['is_significant'] else "✗"
+                st.write(f"**{sig}**")
     else:
         st.info("No strong correlations found (threshold: 0.5)")
 
 
+# ========== PAGE: ADVANCED ANALYSIS ==========
+
+elif page == "Advanced Analysis":
+    st.title("🎯 Advanced Statistical Analysis")
+    st.markdown("---")
+    
+    # Time Series Decomposition
+    st.subheader("📊 Time Series Decomposition")
+    st.caption("Separate trend, seasonal, and residual components")
+    
+    col1, col2 = st.columns(2)
+    with col1:
+        decomp_city = st.selectbox("Select City", df['city_name'].unique(), key='decomp')
+    with col2:
+        decomp_var = st.selectbox("Variable", ['temperature', 'humidity', 'wind_speed'], key='decomp_var')
+    
+    if st.button("🔍 Run Decomposition"):
+        with st.spinner("Decomposing time series..."):
+            result = analyzer.decompose_time_series(decomp_city, decomp_var, period=24)
+            
+            if 'error' in result:
+                st.error(result['error'])
+            else:
+                st.success("✓ Decomposition complete!")
+                
+                col1, col2, col3 = st.columns(3)
+                with col1:
+                    st.metric("Trend Strength", f"{result['trend_strength']:.3f}")
+                with col2:
+                    st.metric("Seasonal Strength", f"{result['seasonal_strength']:.3f}")
+                with col3:
+                    st.metric("Observations", result['n_observations'])
+                
+                st.info(f"**Interpretation:** {result['interpretation']}")
+                
+                st.caption("💡 Trend strength >0.6 = strong trend, >0.3 = moderate trend")
+    
+    st.markdown("---")
+    
+    # Principal Component Analysis
+    st.subheader("🎯 Principal Component Analysis (PCA)")
+    st.caption("Reduce dimensionality and identify most important features")
+    
+    n_components = st.slider("Number of Components", 2, 4, 3)
+    
+    if st.button("🔍 Run PCA"):
+        with st.spinner("Performing PCA..."):
+            pca_result = analyzer.perform_pca(n_components=n_components)
+            
+            if 'error' in pca_result:
+                st.error(pca_result['error'])
+            else:
+                st.success("✓ PCA complete!")
+                
+                # Explained variance
+                st.write("**Variance Explained by Each Component:**")
+                var_df = pd.DataFrame({
+                    'Component': [f'PC{i+1}' for i in range(n_components)],
+                    'Variance Explained': [f"{v*100:.1f}%" for v in pca_result['explained_variance']],
+                    'Cumulative': [f"{v*100:.1f}%" for v in pca_result['cumulative_variance']]
+                })
+                st.dataframe(var_df, use_container_width=True)
+                
+                # Feature importance
+                st.write("**Feature Importance (First Component):**")
+                importance_df = pd.DataFrame(
+                    list(pca_result['feature_importance'].items()),
+                    columns=['Feature', 'Importance']
+                ).sort_values('Importance', ascending=False)
+                
+                fig = px.bar(importance_df, x='Feature', y='Importance',
+                           title='Feature Importance in First Principal Component',
+                           color='Importance',
+                           color_continuous_scale='Blues')
+                st.plotly_chart(fig, use_container_width=True)
+                
+                st.info(f"**Interpretation:** {pca_result['interpretation']}")
+    
+    st.markdown("---")
+    
+    # Feature Engineering Preview
+    st.subheader("⚙️ Feature Engineering")
+    st.caption("Generate advanced features for machine learning")
+    
+    city_for_features = st.selectbox("Select City", df['city_name'].unique(), key='features')
+    
+    if st.button("🔧 Generate Features"):
+        with st.spinner("Engineering features..."):
+            features_df = analyzer.engineer_features(city=city_for_features)
+            
+            st.success(f"✓ Generated {len(features_df.columns)} total features!")
+            
+            # Show sample
+            st.write("**Sample of Engineered Features:**")
+            feature_cols = [c for c in features_df.columns if c not in df.columns][:10]
+            
+            if feature_cols:
+                st.dataframe(features_df[['timestamp'] + feature_cols].head(10), use_container_width=True)
+                
+                st.info(f"💡 Created {len(feature_cols)} new features including:\n"
+                       f"- Lag features (past values)\n"
+                       f"- Rolling statistics (trends)\n"
+                       f"- Cyclical time encoding\n"
+                       f"- Domain-specific features (heat index, wind chill)")
+            else:
+                st.warning("No new features were created")
 
 # ========== PAGE: ANOMALIES ==========
 
 elif page == "Anomalies":
     st.title("⚠️ Anomaly Detection")
     st.markdown("---")
-    
     
     # User controls
     st.subheader("🔍 Detection Settings")
@@ -489,23 +668,33 @@ elif page == "Anomalies":
         )
     
     with col3:
-        method = st.radio("Detection Method", ["Z-Score", "IQR"], horizontal=True)
+        method = st.radio(
+            "Detection Method", 
+            ["Z-Score", "IQR", "Isolation Forest (ML)"], 
+            horizontal=True
+        )
     
     # Show method explanation
     if method == "Z-Score":
         st.info("**Z-Score Method**: Detects values that are unusually far from the average (>3 standard deviations)")
         threshold = st.slider("Z-Score Threshold", 1.0, 4.0, 3.0, 0.5)
-    else:
+    elif method == "IQR":
         st.info("**IQR Method**: Detects outliers using the box plot rule (outside 1.5×IQR from quartiles)")
+        threshold = None
+    else:
+        st.info("**Isolation Forest (ML)**: Uses machine learning to detect anomalies based on multiple features")
         threshold = None
     
     st.markdown("---")
     
-    # Detect anomalies
+    # Detect anomalies - UPDATED SECTION
     if method == "Z-Score":
-        anomalies = detector.detect_zscore(selected_city, variable, threshold)
-    else:
-        anomalies = detector.detect_iqr(selected_city, variable)
+        anomalies = analyzer.detect_anomalies_zscore(selected_city, variable, threshold)
+    elif method == "IQR":
+        anomalies = analyzer.detect_anomalies_iqr(selected_city, variable)
+    else:  # Isolation Forest
+        st.caption("🤖 Using Machine Learning-based anomaly detection on multiple features")
+        anomalies = analyzer.detect_anomalies_isolation_forest(selected_city, contamination=0.1)
     
     # Display results
     st.subheader("📊 Detection Results")
@@ -532,8 +721,9 @@ elif page == "Anomalies":
         # Show anomalies table
         st.subheader("📋 Anomalous Records")
         anomalies_display = anomalies.copy()
-        anomalies_display['timestamp'] = pd.to_datetime(anomalies_display['timestamp']).dt.strftime('%Y-%m-%d %H:%M')
-        st.dataframe(anomalies_display, width="stretch")
+        if 'timestamp' in anomalies_display.columns:
+            anomalies_display['timestamp'] = pd.to_datetime(anomalies_display['timestamp']).dt.strftime('%Y-%m-%d %H:%M')
+        st.dataframe(anomalies_display, use_container_width=True)
         
         # Visualization
         st.subheader("📈 Visualization")
@@ -553,13 +743,14 @@ elif page == "Anomalies":
         ))
         
         # Highlight anomalies
-        fig.add_trace(go.Scatter(
-            x=anomalies['timestamp'],
-            y=anomalies[variable],
-            mode='markers',
-            name='Anomalies',
-            marker=dict(size=15, color='red', symbol='x', line=dict(width=2, color='darkred'))
-        ))
+        if 'timestamp' in anomalies.columns and variable in anomalies.columns:
+            fig.add_trace(go.Scatter(
+                x=anomalies['timestamp'],
+                y=anomalies[variable],
+                mode='markers',
+                name='Anomalies',
+                marker=dict(size=15, color='red', symbol='x', line=dict(width=2, color='darkred'))
+            ))
         
         fig.update_layout(
             title=f"Anomaly Detection: {variable.title()} in {selected_city}",
@@ -569,7 +760,7 @@ elif page == "Anomalies":
             hovermode='x unified'
         )
         
-        st.plotly_chart(fig, width="stretch")
+        st.plotly_chart(fig, use_container_width=True)
         
         # Download anomalies
         csv = anomalies_display.to_csv(index=False)
@@ -583,56 +774,19 @@ elif page == "Anomalies":
     else:
         st.success(f"✅ No anomalies detected in {variable} for {selected_city}!")
         st.info("All data points fall within normal range.")
-    
-    # Summary statistics
-    st.markdown("---")
-    st.subheader("📊 Summary Statistics")
-    
-    summary = detector.get_summary(selected_city, variable)
-    
-    col1, col2 = st.columns(2)
-    
-    with col1:
-        st.write("**Z-Score Method:**")
-        st.write(f"- Anomalies found: {summary['zscore_anomalies']}")
-        st.write(f"- Percentage: {summary['zscore_percentage']:.2f}%")
-    
-    with col2:
-        st.write("**IQR Method:**")
-        st.write(f"- Outliers found: {summary['iqr_outliers']}")
-        st.write(f"- Percentage: {summary['iqr_percentage']:.2f}%")
-    
-    # Educational note
-    with st.expander("📖 Learn More About These Methods"):
-        st.markdown("""
-        ### Z-Score Method
-        - Measures how many standard deviations a point is from the mean
-        - Assumes data follows a normal (bell curve) distribution
-        - Threshold of 3 captures 99.7% of normal data
-        - **Best for**: Large datasets with roughly normal distribution
-        
-        ### IQR (Interquartile Range) Method
-        - Based on the middle 50% of data (Q1 to Q3)
-        - More robust to extreme values
-        - Uses the "box plot" rule: Q1 - 1.5×IQR to Q3 + 1.5×IQR
-        - **Best for**: Smaller datasets or skewed distributions
-        
-        ### When to Use Each:
-        - **Z-Score**: When you have lots of data and want statistical precision
-        - **IQR**: When you have outliers affecting the mean/std, or smaller datasets
-        """)
 
 
 
-            
+
+
 # ========== PAGE: RAW DATA ==========
 
 elif page == "Raw Data":
-    st.title("Raw Data Explorer")
+    st.title("📁 Raw Data Explorer")
     st.markdown("---")
     
     # Filters
-    st.subheader("Filters")
+    st.subheader("🔍 Filters")
     col1, col2 = st.columns(2)
     
     with col1:
@@ -643,19 +797,19 @@ elif page == "Raw Data":
         )
     
     with col2:
-        num_records = st.slider("Number of Records", 10, len(df), min(100, len(df)))
+        num_records = st.slider("Number of Records", 10, min(500, len(df)), min(100, len(df)))
     
     # Filter data
     filtered_df = df[df['city_name'].isin(selected_cities)].head(num_records)
     
     # Display data
-    st.subheader(f"Showing {len(filtered_df)} records")
-    st.dataframe(filtered_df, width="stretch")
+    st.subheader(f"📊 Showing {len(filtered_df)} records")
+    st.dataframe(filtered_df, use_container_width=True)
     
     # Download button
     csv = filtered_df.to_csv(index=False)
     st.download_button(
-        label=" Download as CSV",
+        label="📥 Download as CSV",
         data=csv,
         file_name="weather_data.csv",
         mime="text/csv"
@@ -663,7 +817,7 @@ elif page == "Raw Data":
     
     # Database stats
     st.markdown("---")
-    st.subheader("Database Statistics")
+    st.subheader("💾 Database Statistics")
     
     col1, col2, col3, col4 = st.columns(4)
     
@@ -672,6 +826,10 @@ elif page == "Raw Data":
     with col2:
         st.metric("Cities", df['city_name'].nunique())
     with col3:
-        st.metric("Date Range", f"{(pd.to_datetime(df['timestamp'].max()) - pd.to_datetime(df['timestamp'].min())).days} days")
+        if 'timestamp' in df.columns:
+            date_range = (pd.to_datetime(df['timestamp'].max()) - pd.to_datetime(df['timestamp'].min())).days
+            st.metric("Date Range (days)", f"{date_range}")
+        else:
+            st.metric("Date Range", "N/A")
     with col4:
         st.metric("Variables", len(df.columns))
