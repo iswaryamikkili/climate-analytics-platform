@@ -13,7 +13,16 @@ from src.database import WeatherDatabase
 from src.statistical_analysis import WeatherAnalyzer
 from src.anomaly_detection import AnomalyDetector
 from src.data_ingestion import WeatherDataCollector
-
+# Add this with your other imports
+from src.forecasting.statistical_models import ProphetForecaster, ARIMAForecaster
+from src.forecasting.ml_models import XGBoostForecaster, LightGBMForecaster, RandomForestForecaster
+from src.forecasting.ensemble import (
+    WeightedEnsembleForecaster,
+    StackingEnsembleForecaster,
+    DynamicEnsembleForecaster,
+    create_default_ensemble
+)
+from src.forecasting.base import ModelEvaluator
 # Page configuration
 st.set_page_config(
     page_title="Climate Analytics Platform",
@@ -29,7 +38,7 @@ st.markdown("""
         padding: 0rem 1rem;
     }
     .stMetric {
-        background-color: #f0f2f6;
+        background-color: ;
         padding: 15px;
         border-radius: 10px;
     }
@@ -95,7 +104,7 @@ st.sidebar.markdown("---")
 page = st.sidebar.radio(
     "Navigation",
     ["Overview", "City Comparison", "Time Series", 
-     "Correlations", "Advanced Analysis", "Anomalies", "Raw Data"]
+     "Correlations", "Advanced Analysis", "Anomalies","Forecasting", "Raw Data"]
 )
 
 st.sidebar.markdown("---")
@@ -776,7 +785,542 @@ elif page == "Anomalies":
         st.info("All data points fall within normal range.")
 
 
+# ========== PAGE: FORECASTING ==========
 
+elif page == "Forecasting":
+    st.title("🔮 Weather Forecasting")
+    st.markdown("**Predict future weather using statistical models, machine learning, and ensemble methods**")
+    st.markdown("---")
+    
+    # ===== SECTION 1: Configuration =====
+    st.subheader("⚙️ Forecast Configuration")
+    
+    col1, col2, col3 = st.columns(3)
+    
+    with col1:
+        forecast_city = st.selectbox("Select City", df['city_name'].unique(), key='forecast_city')
+    
+    with col2:
+        forecast_variable = st.selectbox(
+            "Select Variable",
+            ['temperature', 'humidity', 'wind_speed', 'pressure'],
+            key='forecast_var'
+        )
+    
+    with col3:
+        forecast_hours = st.slider("Forecast Horizon (hours)", 6, 72, 24, 6)
+    
+    st.markdown("---")
+    
+    # ===== SECTION 2: Model Selection =====
+    st.subheader("🤖 Select Forecasting Method")
+    
+    forecast_type = st.radio(
+        "Choose Approach",
+        ["📊 Individual Models", "🎯 Ensemble Methods", "⚖️ Compare All"],
+        horizontal=True
+    )
+    
+    # Prepare data
+    city_data = df[df['city_name'] == forecast_city].copy()
+    city_data = city_data.sort_values('timestamp')
+    city_data['timestamp'] = pd.to_datetime(city_data['timestamp'])
+    city_data.set_index('timestamp', inplace=True)
+    
+    # Check data sufficiency
+    if len(city_data) < 50:
+        st.error(f"❌ Insufficient data for {forecast_city}. Need at least 50 records, have {len(city_data)}.")
+        st.info("💡 Click 'Collect New Data' in the sidebar to gather more historical data.")
+        st.stop()
+    
+    # Split data for evaluation
+    split_idx = int(len(city_data) * 0.8)
+    train_data = city_data.iloc[:split_idx]
+    test_data = city_data.iloc[split_idx:]
+    
+    st.info(f"📊 Using {len(train_data)} records for training, {len(test_data)} for validation")
+    
+    # ===== FORECAST TYPE 1: INDIVIDUAL MODELS =====
+    if forecast_type == "📊 Individual Models":
+        st.markdown("---")
+        st.subheader("Select Individual Model")
+        
+        model_choice = st.selectbox(
+            "Choose Model",
+            ["Prophet", "ARIMA", "XGBoost", "LightGBM", "Random Forest"]
+        )
+        
+        # Model descriptions
+        model_info = {
+            "Prophet": "📈 Best for data with strong seasonality and trends. Handles missing data well.",
+            "ARIMA": "📉 Classic statistical method. Best for short-term forecasts with stable patterns.",
+            "XGBoost": "🚀 Powerful gradient boosting. Best for complex non-linear patterns.",
+            "LightGBM": "⚡ Fast training, great for large datasets. Similar to XGBoost but faster.",
+            "Random Forest": "🌲 Robust ensemble of decision trees. Good baseline model."
+        }
+        
+        st.info(model_info[model_choice])
+        
+        if st.button("🔮 Generate Forecast", key='individual'):
+            with st.spinner(f"Training {model_choice} model..."):
+                try:
+                    # Initialize model
+                    if model_choice == "Prophet":
+                        model = ProphetForecaster(daily_seasonality=True, weekly_seasonality=True)
+                    elif model_choice == "ARIMA":
+                        model = ARIMAForecaster(auto_select=True)
+                    elif model_choice == "XGBoost":
+                        model = XGBoostForecaster(n_estimators=100, max_depth=6)
+                    elif model_choice == "LightGBM":
+                        model = LightGBMForecaster(n_estimators=100)
+                    else:  # Random Forest
+                        model = RandomForestForecaster(n_estimators=100)
+                    
+                    # Fit model
+                    model.fit(train_data, forecast_variable)
+                    
+                    # Generate forecast
+                    forecast_df = model.predict(forecast_hours)
+                    
+                    # Evaluate on test data
+                    if len(test_data) > 0:
+                        test_forecast = model.predict(len(test_data))
+                        y_true = test_data[forecast_variable].values
+                        y_pred = test_forecast['forecast'].values[:len(y_true)]
+                        metrics = ModelEvaluator.calculate_metrics(y_true, y_pred)
+                        
+                        st.success(f"✅ {model_choice} model trained successfully!")
+                        
+                        # Display metrics
+                        col1, col2, col3, col4 = st.columns(4)
+                        with col1:
+                            st.metric("RMSE", f"{metrics['rmse']:.3f}")
+                        with col2:
+                            st.metric("MAE", f"{metrics['mae']:.3f}")
+                        with col3:
+                            st.metric("R²", f"{metrics['r2']:.3f}")
+                        with col4:
+                            st.metric("MAPE", f"{metrics['mape']:.2f}%")
+                    
+                    # Visualize forecast
+                    st.markdown("---")
+                    st.subheader("📈 Forecast Visualization")
+                    
+                    fig = go.Figure()
+                    
+                    # Historical data
+                    fig.add_trace(go.Scatter(
+                        x=train_data.index,
+                        y=train_data[forecast_variable],
+                        mode='lines',
+                        name='Historical',
+                        line=dict(color='blue', width=2)
+                    ))
+                    
+                    # Test data (if exists)
+                    if len(test_data) > 0:
+                        fig.add_trace(go.Scatter(
+                            x=test_data.index,
+                            y=test_data[forecast_variable],
+                            mode='lines',
+                            name='Actual (Test)',
+                            line=dict(color='green', width=2)
+                        ))
+                    
+                    # Forecast
+                    fig.add_trace(go.Scatter(
+                        x=forecast_df.index,
+                        y=forecast_df['forecast'],
+                        mode='lines',
+                        name='Forecast',
+                        line=dict(color='red', width=3, dash='dash')
+                    ))
+                    
+                    # Confidence interval
+                    fig.add_trace(go.Scatter(
+                        x=forecast_df.index,
+                        y=forecast_df['upper_bound'],
+                        mode='lines',
+                        line=dict(width=0),
+                        showlegend=False,
+                        hoverinfo='skip'
+                    ))
+                    
+                    fig.add_trace(go.Scatter(
+                        x=forecast_df.index,
+                        y=forecast_df['lower_bound'],
+                        mode='lines',
+                        line=dict(width=0),
+                        fillcolor='rgba(255, 0, 0, 0.2)',
+                        fill='tonexty',
+                        name='95% Confidence',
+                        hoverinfo='skip'
+                    ))
+                    
+                    fig.update_layout(
+                        title=f"{model_choice} Forecast: {forecast_variable.title()} in {forecast_city}",
+                        xaxis_title="Time",
+                        yaxis_title=forecast_variable.replace('_', ' ').title(),
+                        height=500,
+                        hovermode='x unified'
+                    )
+                    
+                    st.plotly_chart(fig, use_container_width=True)
+                    
+                    # Show forecast values
+                    st.subheader("📋 Forecast Values")
+                    forecast_display = forecast_df.copy()
+                    forecast_display.index = forecast_display.index.strftime('%Y-%m-%d %H:%M')
+                    st.dataframe(forecast_display, use_container_width=True)
+                    
+                    # Download button
+                    csv = forecast_display.to_csv()
+                    st.download_button(
+                        "📥 Download Forecast",
+                        csv,
+                        f"forecast_{model_choice}_{forecast_city}.csv",
+                        "text/csv"
+                    )
+                    
+                except Exception as e:
+                    st.error(f"❌ Error: {str(e)}")
+                    st.info("💡 Try collecting more data or selecting a different model.")
+    
+    # ===== FORECAST TYPE 2: ENSEMBLE METHODS =====
+    elif forecast_type == "🎯 Ensemble Methods":
+        st.markdown("---")
+        st.subheader("Select Ensemble Strategy")
+        
+        ensemble_method = st.selectbox(
+            "Choose Ensemble Method",
+            ["Weighted Average", "Stacking", "Dynamic Weighting"]
+        )
+        
+        # Ensemble descriptions
+        ensemble_info = {
+            "Weighted Average": "⚖️ Combines predictions using weighted averaging. Fast and interpretable.",
+            "Stacking": "📚 Uses a meta-learner to optimally combine predictions. Often most accurate.",
+            "Dynamic Weighting": "🔄 Adapts weights based on recent performance. Best for changing patterns."
+        }
+        
+        st.info(ensemble_info[ensemble_method])
+        
+        # Weight method for weighted average
+        if ensemble_method == "Weighted Average":
+            weight_method = st.radio(
+                "Weight Selection",
+                ["Equal Weights", "Performance-Based"],
+                horizontal=True
+            )
+        
+        if st.button("🔮 Generate Ensemble Forecast", key='ensemble'):
+            with st.spinner(f"Training {ensemble_method} ensemble with 5 models..."):
+                try:
+                    # Create ensemble
+                    if ensemble_method == "Weighted Average":
+                        method = 'equal' if weight_method == "Equal Weights" else 'performance'
+                        ensemble = create_default_ensemble('weighted')
+                        ensemble.weight_method = method
+                        ensemble_name = f"Weighted Ensemble ({weight_method})"
+                    elif ensemble_method == "Stacking":
+                        ensemble = create_default_ensemble('stacking')
+                        ensemble_name = "Stacking Ensemble"
+                    else:  # Dynamic
+                        ensemble = create_default_ensemble('dynamic')
+                        ensemble_name = "Dynamic Ensemble"
+                    
+                    # Fit ensemble
+                    ensemble.fit(train_data, forecast_variable)
+                    
+                    # Generate forecast
+                    forecast_df = ensemble.predict(forecast_hours)
+                    
+                    # Evaluate on test data
+                    if len(test_data) > 0:
+                        test_forecast = ensemble.predict(len(test_data))
+                        y_true = test_data[forecast_variable].values
+                        y_pred = test_forecast['forecast'].values[:len(y_true)]
+                        metrics = ModelEvaluator.calculate_metrics(y_true, y_pred)
+                        
+                        st.success(f"✅ {ensemble_name} trained successfully!")
+                        
+                        # Display metrics
+                        col1, col2, col3, col4 = st.columns(4)
+                        with col1:
+                            st.metric("RMSE", f"{metrics['rmse']:.3f}")
+                        with col2:
+                            st.metric("MAE", f"{metrics['mae']:.3f}")
+                        with col3:
+                            st.metric("R²", f"{metrics['r2']:.3f}")
+                        with col4:
+                            st.metric("MAPE", f"{metrics['mape']:.2f}%")
+                        
+                        # Show ensemble weights
+                        if hasattr(ensemble, 'weights') and ensemble.weights:
+                            st.markdown("---")
+                            st.subheader("⚖️ Model Weights")
+                            
+                            weights_df = pd.DataFrame([
+                                {'Model': name, 'Weight': weight}
+                                for name, weight in ensemble.weights.items()
+                            ]).sort_values('Weight', ascending=False)
+                            
+                            fig_weights = px.bar(
+                                weights_df,
+                                x='Model',
+                                y='Weight',
+                                title='Ensemble Model Weights',
+                                color='Weight',
+                                color_continuous_scale='Blues'
+                            )
+                            st.plotly_chart(fig_weights, use_container_width=True)
+                    
+                    # Visualize forecast
+                    st.markdown("---")
+                    st.subheader("📈 Ensemble Forecast")
+                    
+                    fig = go.Figure()
+                    
+                    # Historical data
+                    fig.add_trace(go.Scatter(
+                        x=train_data.index,
+                        y=train_data[forecast_variable],
+                        mode='lines',
+                        name='Historical',
+                        line=dict(color='blue', width=2)
+                    ))
+                    
+                    # Test data
+                    if len(test_data) > 0:
+                        fig.add_trace(go.Scatter(
+                            x=test_data.index,
+                            y=test_data[forecast_variable],
+                            mode='lines',
+                            name='Actual (Test)',
+                            line=dict(color='green', width=2)
+                        ))
+                    
+                    # Ensemble forecast
+                    fig.add_trace(go.Scatter(
+                        x=forecast_df.index,
+                        y=forecast_df['forecast'],
+                        mode='lines',
+                        name='Ensemble Forecast',
+                        line=dict(color='purple', width=3, dash='dash')
+                    ))
+                    
+                    # Confidence interval
+                    fig.add_trace(go.Scatter(
+                        x=forecast_df.index,
+                        y=forecast_df['upper_bound'],
+                        mode='lines',
+                        line=dict(width=0),
+                        showlegend=False
+                    ))
+                    
+                    fig.add_trace(go.Scatter(
+                        x=forecast_df.index,
+                        y=forecast_df['lower_bound'],
+                        mode='lines',
+                        line=dict(width=0),
+                        fillcolor='rgba(128, 0, 128, 0.2)',
+                        fill='tonexty',
+                        name='95% Confidence'
+                    ))
+                    
+                    fig.update_layout(
+                        title=f"{ensemble_name}: {forecast_variable.title()} in {forecast_city}",
+                        xaxis_title="Time",
+                        yaxis_title=forecast_variable.replace('_', ' ').title(),
+                        height=500,
+                        hovermode='x unified'
+                    )
+                    
+                    st.plotly_chart(fig, use_container_width=True)
+                    
+                    # Show forecast values
+                    st.subheader("📋 Forecast Values")
+                    forecast_display = forecast_df.copy()
+                    forecast_display.index = forecast_display.index.strftime('%Y-%m-%d %H:%M')
+                    st.dataframe(forecast_display, use_container_width=True)
+                    
+                    # Download button
+                    csv = forecast_display.to_csv()
+                    st.download_button(
+                        "📥 Download Forecast",
+                        csv,
+                        f"forecast_ensemble_{forecast_city}.csv",
+                        "text/csv"
+                    )
+                    
+                except Exception as e:
+                    st.error(f"❌ Error: {str(e)}")
+                    st.exception(e)
+    
+    # ===== FORECAST TYPE 3: COMPARE ALL =====
+    else:  # Compare All
+        st.markdown("---")
+        st.subheader("🏆 Model Comparison")
+        st.caption("Compare all individual models and ensemble methods")
+        
+        if st.button("🔮 Run Full Comparison", key='compare'):
+            with st.spinner("Training and evaluating all models... This may take a minute..."):
+                try:
+                    # Initialize all models
+                    models = {
+                        'Prophet': ProphetForecaster(daily_seasonality=True),
+                        'ARIMA': ARIMAForecaster(auto_select=True),
+                        'XGBoost': XGBoostForecaster(n_estimators=50),
+                        'LightGBM': LightGBMForecaster(n_estimators=50),
+                        'Random Forest': RandomForestForecaster(n_estimators=50),
+                        'Ensemble (Equal)': None,
+                        'Ensemble (Performance)': None,
+                        'Ensemble (Stacking)': None
+                    }
+                    
+                    results = {}
+                    forecasts = {}
+                    
+                    # Train and evaluate each model
+                    progress_bar = st.progress(0)
+                    total_models = len(models)
+                    
+                    for idx, (name, model) in enumerate(models.items()):
+                        try:
+                            # Create ensemble models
+                            if 'Ensemble' in name:
+                                if 'Equal' in name:
+                                    model = create_default_ensemble('weighted')
+                                    model.weight_method = 'equal'
+                                elif 'Performance' in name:
+                                    model = create_default_ensemble('weighted')
+                                    model.weight_method = 'performance'
+                                else:  # Stacking
+                                    model = create_default_ensemble('stacking')
+                            
+                            # Fit model
+                            model.fit(train_data, forecast_variable)
+                            
+                            # Predict on test data
+                            if len(test_data) > 0:
+                                test_forecast = model.predict(len(test_data))
+                                y_true = test_data[forecast_variable].values
+                                y_pred = test_forecast['forecast'].values[:len(y_true)]
+                                metrics = ModelEvaluator.calculate_metrics(y_true, y_pred)
+                                
+                                results[name] = metrics
+                                
+                                # Generate future forecast
+                                future_forecast = model.predict(forecast_hours)
+                                forecasts[name] = future_forecast
+                            
+                            progress_bar.progress((idx + 1) / total_models)
+                            
+                        except Exception as e:
+                            st.warning(f"⚠️ {name} failed: {str(e)}")
+                            continue
+                    
+                    progress_bar.empty()
+                    
+                    if results:
+                        st.success(f"✅ Successfully compared {len(results)} models!")
+                        
+                        # Create comparison DataFrame
+                        comparison_df = pd.DataFrame(results).T
+                        comparison_df = comparison_df[['rmse', 'mae', 'r2', 'mape']].round(3)
+                        comparison_df = comparison_df.sort_values('rmse')
+                        
+                        # Display rankings
+                        st.subheader("🏆 Model Performance Rankings")
+                        
+                        # Add rank column
+                        comparison_df.insert(0, 'Rank', range(1, len(comparison_df) + 1))
+                        
+                        # Style the dataframe
+                        st.dataframe(comparison_df, use_container_width=True)
+                        
+                        # Highlight best model
+                        best_model = comparison_df.index[0]
+                        st.success(f"🥇 **Best Model:** {best_model} (RMSE: {comparison_df.loc[best_model, 'rmse']:.3f})")
+                        
+                        # Visualize comparison
+                        st.markdown("---")
+                        st.subheader("📊 Performance Comparison")
+                        
+                        # RMSE comparison
+                        fig_rmse = px.bar(
+                            comparison_df.reset_index(),
+                            x='index',
+                            y='rmse',
+                            title='RMSE Comparison (Lower is Better)',
+                            labels={'index': 'Model', 'rmse': 'RMSE'},
+                            color='rmse',
+                            color_continuous_scale='RdYlGn_r'
+                        )
+                        st.plotly_chart(fig_rmse, use_container_width=True)
+                        
+                        # Forecast comparison plot
+                        st.markdown("---")
+                        st.subheader("📈 Forecast Comparison")
+                        
+                        fig = go.Figure()
+                        
+                        # Historical
+                        fig.add_trace(go.Scatter(
+                            x=train_data.index,
+                            y=train_data[forecast_variable],
+                            mode='lines',
+                            name='Historical',
+                            line=dict(color='black', width=2)
+                        ))
+                        
+                        # Test data
+                        if len(test_data) > 0:
+                            fig.add_trace(go.Scatter(
+                                x=test_data.index,
+                                y=test_data[forecast_variable],
+                                mode='lines',
+                                name='Actual',
+                                line=dict(color='green', width=2)
+                            ))
+                        
+                        # All forecasts
+                        colors = px.colors.qualitative.Plotly
+                        for idx, (name, forecast) in enumerate(forecasts.items()):
+                            fig.add_trace(go.Scatter(
+                                x=forecast.index,
+                                y=forecast['forecast'],
+                                mode='lines',
+                                name=name,
+                                line=dict(width=2, dash='dash'),
+                                opacity=0.7
+                            ))
+                        
+                        fig.update_layout(
+                            title=f"All Model Forecasts: {forecast_variable.title()} in {forecast_city}",
+                            xaxis_title="Time",
+                            yaxis_title=forecast_variable.replace('_', ' ').title(),
+                            height=600,
+                            hovermode='x unified'
+                        )
+                        
+                        st.plotly_chart(fig, use_container_width=True)
+                        
+                        # Download comparison
+                        csv = comparison_df.to_csv()
+                        st.download_button(
+                            "📥 Download Comparison Results",
+                            csv,
+                            f"model_comparison_{forecast_city}.csv",
+                            "text/csv"
+                        )
+                    
+                    else:
+                        st.error("❌ All models failed to train. Please check your data.")
+                        
+                except Exception as e:
+                    st.error(f"❌ Comparison failed: {str(e)}")
+                    st.exception(e)
 
 
 # ========== PAGE: RAW DATA ==========
